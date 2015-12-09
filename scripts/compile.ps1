@@ -55,7 +55,15 @@ Download it from https://www.cmake.org
     
         # Restore packages
         header "Restoring packages"
-        & "$DnxRoot\dnu" restore "$RepoRoot" --quiet --runtime "osx.10.10-x64" --runtime "ubuntu.14.04-x64" --runtime "win7-x64" --no-cache
+        & "$DnxRoot\dnu" restore "$RepoRoot\src" --quiet --runtime "osx.10.10-x64" --runtime "ubuntu.14.04-x64" --runtime "win7-x64" --no-cache
+        & "$DnxRoot\dnu" restore "$RepoRoot\test" --quiet --runtime "osx.10.10-x64" --runtime "ubuntu.14.04-x64" --runtime "win7-x64" --no-cache
+        & "$DnxRoot\dnu" restore "$RepoRoot\tools" --quiet --runtime "osx.10.10-x64" --runtime "ubuntu.14.04-x64" --runtime "win7-x64" --no-cache
+
+        $oldErrorAction=$ErrorActionPreference
+        $ErrorActionPreference="SilentlyContinue"
+        & "$DnxRoot\dnu" restore "$RepoRoot\testapp" --quiet --runtime "osx.10.10-x64" --runtime "ubuntu.14.04-x64" --runtime "win7-x64" --no-cache 2>&1 | Out-Null
+        $ErrorActionPreference=$oldErrorAction
+
         if (!$?) {
             Write-Host "Command failed: " dotnet restore "$RepoRoot" --quiet --runtime "osx.10.10-x64" --runtime "ubuntu.14.04-x64" --runtime "win7-x64" --no-cache
             Exit 1
