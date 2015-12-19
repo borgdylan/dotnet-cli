@@ -9,6 +9,7 @@ using System.Text;
 using Xunit;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.ProjectModel;
+using Microsoft.Extensions.PlatformAbstractions;
 
 namespace ConsoleApplication
 {
@@ -38,7 +39,7 @@ namespace ConsoleApplication
             TestDirectory = Path.Combine(RootPath, TESTDIR_NAME);
             OutputDirectory = Path.Combine(RootPath, OUTPUTDIR_NAME);
 
-            Rid = RuntimeIdentifier.Current;
+            Rid = PlatformServices.Default.Runtime.GetRuntimeIdentifier();
         }
 
         [Fact]

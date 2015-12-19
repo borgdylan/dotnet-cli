@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.Tools.Publish
                     continue;
                 }
 
-                if (string.IsNullOrEmpty(runtimeIdentifier) || runtimeIdentifier.Equals(context.RuntimeIdentifier))
+                if (string.IsNullOrEmpty(runtimeIdentifier) || AreRuntimesCompatible(runtimeIdentifier, context.RuntimeIdentifier))
                 {
                     if (framework == null || framework.Equals(context.TargetFramework))
                     {
@@ -87,6 +87,35 @@ namespace Microsoft.DotNet.Tools.Publish
                     }
                 }
             }
+        }
+
+        private static bool AreRuntimesCompatible(string requested, string target)
+        {
+            if (requested.Equals(target, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+
+            // Restore usually just writes win7-[arch] targets, even on higher versions of Windows.
+            // So try rewriting the requested RID as win7 and check if it exists
+            // See https://github.com/dotnet/cli/issues/619
+            // This is super hacky, but works :)
+            if (requested.StartsWith("win"))
+            {
+                if (requested.EndsWith("x86"))
+                {
+                    requested = "win7-x86";
+                }
+                else if (requested.EndsWith("x64"))
+                {
+                    requested = "win7-x64";
+                }
+                // Don't rewrite "win10-arm"! There is no such thing as win7-arm ;)
+
+                // Try again
+                return requested.Equals(target, StringComparison.OrdinalIgnoreCase);
+            }
+            return false;
         }
 
         /// <summary>

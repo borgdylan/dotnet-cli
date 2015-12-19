@@ -6,6 +6,7 @@ using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.ProjectModel;
 using System;
 using System.IO;
+using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Microsoft.DotNet.Tools.Publish
 {
@@ -33,7 +34,7 @@ namespace Microsoft.DotNet.Tools.Publish
 
                 publish.Framework = framework.Value();
                 // TODO: Remove default once xplat publish is enabled.
-                publish.Runtime = runtime.Value() ?? RuntimeIdentifier.Current;
+                publish.Runtime = runtime.Value() ?? PlatformServices.Default.Runtime.GetRuntimeIdentifier();
                 publish.OutputPath = output.Value();
                 publish.Configuration = configuration.Value() ?? Constants.DefaultConfiguration;
 
