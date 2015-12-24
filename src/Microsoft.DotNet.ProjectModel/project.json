@@ -1,5 +1,8 @@
 ﻿{
     "version": "1.0.0-*",
+    "compilationOptions": {
+        "keyFile": "../../tools/Key.snk"
+    },
     "description": "Types to model a .NET Project",
     "dependencies": {
         "NuGet.Packaging": "3.3.0-*",

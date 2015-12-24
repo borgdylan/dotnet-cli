@@ -1,5 +1,8 @@
 {
     "version": "1.0.0-*",
+    "compilationOptions": {
+        "keyFile": "../../tools/Key.snk"
+    },
     "dependencies": {
         "Microsoft.DotNet.ProjectModel": "1.0.0-*"
     },
