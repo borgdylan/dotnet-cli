@@ -5,10 +5,6 @@
         "emitEntryPoint": true
     },
     "dependencies": {
-        "NETStandard.Library": "1.0.0-rc2-23616",
-        "System.Xml.XDocument": "4.0.11-rc2-23616",
-        "System.Resources.ReaderWriter": "4.0.0-rc2-23616",
-
         "Microsoft.CodeAnalysis.CSharp":  "1.1.1",
         "Microsoft.DotNet.Compiler.Common": "1.0.0-*",
         "Microsoft.DotNet.Cli.Utils": {
@@ -21,7 +17,19 @@
         }
     },
     "frameworks": {
-        "dnxcore50": { }
+        "dnxcore50": {
+        	"dependencies": {
+        		"NETStandard.Library": "1.0.0-rc2-23616",
+        		"System.Xml.XDocument": "4.0.11-rc2-23616",
+		        "System.Resources.ReaderWriter": "4.0.0-rc2-23616"
+        	}
+        },
+        "net451": {
+        	"frameworkAssemblies": {
+        		"System.Xml.Linq": "4.0.0.0",
+        		"System.IO": "4.0.0.0"
+        	}
+        }
     },
     "scripts": {
         "postcompile": [

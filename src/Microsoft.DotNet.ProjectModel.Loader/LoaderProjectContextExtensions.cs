@@ -3,7 +3,9 @@
 
 using System.Collections.Generic;
 using System.Reflection;
+#if DNXCORE50
 using System.Runtime.Loader;
+#endif
 
 namespace Microsoft.DotNet.ProjectModel.Loader
 {

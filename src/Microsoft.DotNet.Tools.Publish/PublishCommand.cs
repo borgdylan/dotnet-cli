@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.Tools.Publish
 {
@@ -65,7 +66,22 @@ namespace Microsoft.DotNet.Tools.Publish
                 NumberOfProjects++;
             }
         }
-
+		
+		private static bool RIDEquals(string rid1, string rid2)
+		{
+			if (Regex.IsMatch(rid1, "^ubuntu(.)*$") && Regex.IsMatch(rid2, "^ubuntu(.)*$"))
+			{
+				string[] r1 = rid1.Split(new char[] {'-'});
+				string[] r2 = rid2.Split(new char[] {'-'});
+				
+				return r1[1] == r2[1];
+			}
+			else
+			{
+				return rid1.Equals(rid2);
+			}
+		}
+		
         /// <summary>
         /// Return the matching framework/runtime ProjectContext.
         /// If 'nugetframework' or 'runtime' is null or empty then it matches with any.
@@ -76,16 +92,29 @@ namespace Microsoft.DotNet.Tools.Publish
             {
                 if (context.TargetFramework == null || string.IsNullOrEmpty(context.RuntimeIdentifier))
                 {
+                	//Reporter.Output.WriteLine($"Skipping TFM for reason 1: {context.TargetFramework.DotNetFrameworkName}".Yellow());
                     continue;
                 }
-
-                if (string.IsNullOrEmpty(runtimeIdentifier) || runtimeIdentifier.Equals(context.RuntimeIdentifier))
+				
+				//Reporter.Output.WriteLine($"RID: {runtimeIdentifier}".Yellow());
+				//Reporter.Output.WriteLine($"Context RID: {context.RuntimeIdentifier}".Yellow());
+				
+                if (string.IsNullOrEmpty(runtimeIdentifier) || RIDEquals(runtimeIdentifier, context.RuntimeIdentifier))
                 {
                     if (framework == null || framework.Equals(context.TargetFramework))
                     {
+                    	//Reporter.Output.WriteLine($"Returning TFM: {context.TargetFramework.DotNetFrameworkName}".Yellow());
                         yield return context;
                     }
+                    //else
+                    //{
+                    //	Reporter.Output.WriteLine($"Skipping TFM for reason 2: {context.TargetFramework.DotNetFrameworkName}".Yellow());
+                    //}
                 }
+                //else
+                //{
+                //	Reporter.Output.WriteLine($"Skipping TFM for reason 3: {context.TargetFramework.DotNetFrameworkName}".Yellow());
+                //}
             }
         }
 

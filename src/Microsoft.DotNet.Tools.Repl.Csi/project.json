@@ -5,10 +5,6 @@
         "emitEntryPoint": true
     },
     "dependencies": {
-        "NETStandard.Library": "1.0.0-rc2-23616",
-        
-        "Microsoft.Net.CSharp.Interactive.netcore": "1.2.0-beta-20151106-02",
-
         "Microsoft.DotNet.Cli.Utils": {
             "type": "build",
             "version": "1.0.0-*"
@@ -19,7 +15,16 @@
         }
     },
     "frameworks": {
-        "dnxcore50": { }
+        "dnxcore50": {
+        	"dependencies": {
+        		"NETStandard.Library": "1.0.0-rc2-23616",
+        		"Microsoft.Net.CSharp.Interactive.netcore": "1.2.0-beta-20151106-02"
+        	}
+        },
+        "net451": {
+        	"dependencies": {
+        	}
+        }
     },
     "scripts": {
         "postcompile": [

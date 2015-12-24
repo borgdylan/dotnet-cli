@@ -33,6 +33,10 @@ namespace Microsoft.DotNet.Cli.Utils
                 RedirectStandardError = true,
                 RedirectStandardOutput = true
             };
+            
+            #if NET451
+            psi.UseShellExecute = false;
+            #endif
 
             _process = new Process()
             {
@@ -220,7 +224,11 @@ namespace Microsoft.DotNet.Cli.Utils
 
         public Command EnvironmentVariable(string name, string value)
         {
+            #if DNXCORE50
             _process.StartInfo.Environment[name] = value;
+            #else
+            _process.StartInfo.EnvironmentVariables.Add(name,value);
+            #endif
             return this;
         }
 

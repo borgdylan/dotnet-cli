@@ -27,8 +27,12 @@ namespace Microsoft.DotNet.Tools.Repl.Csi
 
         private static int Run(string scriptOpt)
         {
+            #if DNXCORE50
             var corerun = Path.Combine(AppContext.BaseDirectory, Constants.HostExecutableName);
             var csiExe = Path.Combine(AppContext.BaseDirectory, "csi.exe");
+            #else
+            var csiExe = Path.Combine(AppContext.BaseDirectory, "csi");
+            #endif
             var csiArgs = string.IsNullOrEmpty(scriptOpt) ? "-i" : scriptOpt;
             var result = Command.Create(csiExe, csiArgs)
                 .ForwardStdOut()

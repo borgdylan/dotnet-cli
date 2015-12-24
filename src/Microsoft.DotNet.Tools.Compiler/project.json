@@ -5,8 +5,6 @@
     "emitEntryPoint": true
   },
   "dependencies": {
-    "NETStandard.Library": "1.0.0-rc2-23616",
-    "System.Reflection.Metadata": "1.1.0",
     "Microsoft.DotNet.ProjectModel": "1.0.0-*",
     "Microsoft.DotNet.Compiler.Common": "1.0.0-*",
     "Microsoft.DotNet.Cli.Utils": {
@@ -23,7 +21,18 @@
     }
   },
   "frameworks": {
-    "dnxcore50": { }
+    	"dnxcore50": {
+        	"dependencies": {
+        		"NETStandard.Library": "1.0.0-rc2-23616",
+    			"System.Reflection.Metadata": "1.1.0"
+        	}
+        },
+        "net451": {
+        	"frameworkAssemblies": {
+        		"System.IO": "4.0.0.0",
+        		"System.Collections": "4.0.0.0"
+        	}
+        }
   },
   "scripts": {
     "postcompile": [
