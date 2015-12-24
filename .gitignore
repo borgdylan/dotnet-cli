@@ -5,7 +5,6 @@
 *.tar.gz
 *.build
 *.changes
-*.deb
 *.pyc
 *.pyo
 
@@ -166,7 +165,6 @@ publish/
 *.publishproj
 
 # NuGet Packages
-*.nupkg
 # The packages folder can be ignored because of Package Restore
 **/packages/*
 # except build/, which is used as an MSBuild target.
@@ -253,3 +251,4 @@ _Pvt_Extensions
 .fake/
 
 roslyn_bin
+artifacts
