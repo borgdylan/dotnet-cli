@@ -190,9 +190,13 @@ namespace Microsoft.DotNet.Tools.Compiler.Fsc
 
         private static Command RunFsc(string fscArgs)
         {
+        	#if DNXCORE50
             var corerun = Path.Combine(AppContext.BaseDirectory, Constants.HostExecutableName);
             var fscExe = Path.Combine(AppContext.BaseDirectory, "fsc.exe");
             return Command.Create(corerun, $"\"{fscExe}\" {fscArgs}");
+            #else
+            return Command.Create("fsc", fscArgs);
+            #endif
         }
     }
 }

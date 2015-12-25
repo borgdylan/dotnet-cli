@@ -251,4 +251,5 @@ _Pvt_Extensions
 .fake/
 
 roslyn_bin
+fsharp_bin
 artifacts

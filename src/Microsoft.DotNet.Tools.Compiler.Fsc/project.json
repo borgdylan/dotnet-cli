@@ -5,10 +5,6 @@
         "emitEntryPoint": true
     },
     "dependencies": {
-        "NETStandard.Library": "1.0.0-rc2-23616",
-        
-        "Microsoft.FSharp.Compiler.netcore": "1.0.0-alpha-151218",
-
         "Microsoft.DotNet.Cli.Utils": {
             "type": "build",
             "version": "1.0.0-*"
@@ -20,7 +16,17 @@
         "Microsoft.DotNet.Compiler.Common": "1.0.0-*"
     },
     "frameworks": {
-        "dnxcore50": { }
+        "dnxcore50": {
+        	"dependencies": {
+        		"NETStandard.Library": "1.0.0-rc2-23616",
+    			"Microsoft.FSharp.Compiler.netcore": "1.0.0-alpha-151218"
+        	}
+        },
+        "net451": {
+        	"dependencies": {
+        		"FSharp.Compiler.Tools": "4.0.0.1"
+        	}
+        }
     },
     "scripts": {
         "postcompile": [
