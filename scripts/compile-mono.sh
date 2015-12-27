@@ -51,7 +51,9 @@ else
     PREFIX="$(cd -P "$(dirname "$DOTNET_PATH")/.." && pwd)"
 
     header "Restoring packages"
-    $DNX_ROOT/dnu restore "$REPOROOT" --quiet --runtime "$RID" --no-cache
+    $DNX_ROOT/dnu restore "$REPOROOT"/src --quiet --runtime "$RID" --no-cache
+    $DNX_ROOT/dnu restore "$REPOROOT"/test --quiet --runtime "$RID" --no-cache
+    $DNX_ROOT/dnu restore "$REPOROOT"/tools --quiet --runtime "$RID" --no-cache
 fi
 
 header "Building corehost"
