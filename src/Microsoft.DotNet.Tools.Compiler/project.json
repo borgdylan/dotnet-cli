@@ -7,6 +7,7 @@
   "dependencies": {
     "Microsoft.DotNet.ProjectModel": "1.0.0-*",
     "Microsoft.DotNet.Compiler.Common": "1.0.0-*",
+    "System.Reflection.Metadata": "1.1.0",
     "Microsoft.DotNet.Cli.Utils": {
       "type": "build",
       "version": "1.0.0-*"
@@ -23,8 +24,7 @@
   "frameworks": {
     	"dnxcore50": {
         	"dependencies": {
-        		"NETStandard.Library": "1.0.0-rc2-23616",
-    			"System.Reflection.Metadata": "1.1.0"
+        		"NETStandard.Library": "1.0.0-rc2-23616"
         	}
         },
         "net451": {
