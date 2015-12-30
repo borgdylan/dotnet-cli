@@ -1,16 +1,16 @@
 dotnet-publish
 ==============
 
-**NAME**
+# NAME
 
 `dotnet-publish` 
 > packs the application and all of its dependencies into a folder getting it ready for publishing
 
-**SYNOPSIS**
+# SYNOPSIS
 
 `dotnet-publish [options] [project]`
 
-**DESCRIPTION**
+# DESCRIPTION
 
 `dotnet-publish` will compile the application, read through its dependencies specified in _project.json_ and publish the resulting set of files to a directory. 
 This directory contains the assemblies, the runtime as well as the runnable version of the application. 
@@ -20,6 +20,8 @@ This directory can then be moved to a different machine and the application will
 If it is not specified on invocation via [project], _project.json_ in the current directory will be the default. 
 If no _project.json_ can be found, `dotnet-publish` will error out. 
 
+`dotnet-publish` command also requires certain dependencies in the _project.json_ to work. Namely the `Microsoft.NETCore.Runtime` package must be referenced as a dependency in order for the command to copy the runtime files as well as the application's files to the published location. 
+
 The command also requires information on the targeted framework and runtime, both of which can be specified on the command line. 
 If the runtime is not specified, the command will default to the runtime for the current operating system. 
 If the framework is not specified, the command will read the information from the _project.json_ file. 
@@ -27,7 +29,7 @@ In case of no valid framework found, the command will error out.
 In case of multiple valid frameworks found, the command will publish for all valid frameworks. 
 
 
-**Options**
+# Options
 
 `-f`, `--framework` [FID]
 
@@ -55,7 +57,7 @@ If not specified, will default to "Debug".
 
   
 
-**EXAMPLES**
+# EXAMPLES
 
 `dotnet-publish`
 >Publish the current application using the _project.json_ framework and runtime for the current operating system. 
@@ -69,6 +71,6 @@ If not specified, will default to "Debug".
 `dotnet-publish --framework dnxcore50 --runtime osx.10.10-x64`
 >Publish the current application using the `dnxcore50` framework and runtime for `OS X 10.10`  
 	
-**SEE ALSO**
+# SEE ALSO
 
 `dotnet-restore`

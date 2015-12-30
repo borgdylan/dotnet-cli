@@ -22,7 +22,7 @@ Installers
 |         |Ubuntu 14.04 |Windows |Mac OS X |CentOS 7.1 |
 |---------|:------:|:------:|:------:|:------:|
 |**Installers**|[Download Debian Package](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-linux-x64.latest.deb)|[Download Msi](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-win-x64.latest.msi)|[Download Pkg](https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-osx-x64.latest.pkg) |N/A |
-|**Binaries**|[Download tar file](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-linux-x64.latest.tar.gz)|[Download zip file](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-win-x64.latest.zip)|[Download tar file](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-osx-x64.latest.tar.gz) |[Download tar file](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-centos-x64.latest.tar.gz) |
+|**Binaries**|[Download tar file](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-ubuntu-x64.latest.tar.gz)|[Download zip file](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-win-x64.latest.zip)|[Download tar file](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-osx-x64.latest.tar.gz) |[Download tar file](https://dotnetcli.blob.core.windows.net/dotnet/dev/Binaries/Latest/dotnet-centos-x64.latest.tar.gz) |
 
 Interested in .NET Core + ASP.NET 5 RC bits?
 ----------------------------------------
@@ -56,16 +56,16 @@ Then you can either run from source or compile the sample. Running from source i
 	
 Compiling to IL is done using:
 	
-	dotnet compile
+	dotnet build
 This will drop a binary in `./bin/[configuration]/[framework]/[binary name]` that you can just run.
 
 Finally, you can also try out native compilation using RyuJIT as shown below:  
 
-	dotnet compile --native
+	dotnet build --native
 
 The following command will perform native compilation using the C++ Codegenerator:
 
-    dotnet compile --native --cpp
+    dotnet build --native --cpp
 
 This will drop a native single binary in `./bin/[configuration]/[framework]/native/[binary name]` that you can run.
 

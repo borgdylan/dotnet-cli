@@ -11,6 +11,9 @@
 # OSX Packaging temp files
 *.pkg
 
+# OS X Device Services Store
+.DS_Store
+
 # CMake generated files
 cmake/
 
@@ -254,6 +257,6 @@ _Pvt_Extensions
 # FAKE - F# Make
 .fake/
 
-roslyn_bin
-fsharp_bin
-artifacts
+# Exceptions
+# Build Scripts
+#!scripts/build/

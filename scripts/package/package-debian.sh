@@ -12,11 +12,11 @@ SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
   DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
   SOURCE="$(readlink "$SOURCE")"
-  [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+  [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-source "$DIR/../_common.sh"
+source "$DIR/../common/_common.sh"
 
 if [ "$UNAME" != "Linux" ]; then
     error "Debian Package build only supported on Linux"
@@ -30,6 +30,7 @@ PACKAGE_LAYOUT_DIR="$OUTPUT_DIR/deb_intermediate"
 PACKAGE_OUTPUT_DIR="$OUTPUT_DIR/packages/debian"
 TEST_STAGE_DIR="$PACKAGE_OUTPUT_DIR/test"
 REPO_BINARIES_DIR="$REPOROOT/artifacts/ubuntu.14.04-x64/stage2"
+MANPAGE_DIR="$REPOROOT/Documentation/manpages"
 
 execute_build(){
     create_empty_debian_layout
@@ -61,6 +62,9 @@ copy_files_to_debian_layout(){
 
     # Copy config file
     cp "$PACKAGING_ROOT/debian_config.json" "$PACKAGE_LAYOUT_DIR"
+
+    # Copy Manpages
+    cp -a "$MANPAGE_DIR/." "$PACKAGE_LAYOUT_DIR/docs"
 }
 
 create_debian_package(){
