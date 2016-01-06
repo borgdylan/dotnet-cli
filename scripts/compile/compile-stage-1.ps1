@@ -11,7 +11,7 @@ $env:PATH = "$env:DOTNET_INSTALL_DIR\cli\bin;$StartPath"
 
 _ "$RepoRoot\scripts\compile\compile-stage.ps1" @("$Tfm","$Rid","$Configuration","$Stage1Dir","$RepoRoot","$HostDir")
 
-# Copy in the dotnet-restore script
-cp "$RepoRoot\scripts\dotnet-restore.cmd" "$Stage1Dir\bin\dotnet-restore.cmd"
+# Copy dnx into stage 1
+cp -rec "$DnxRoot\" "$Stage1Dir\bin\dnx\"
 
 $env:PATH=$StartPath

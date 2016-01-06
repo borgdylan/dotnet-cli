@@ -12,10 +12,7 @@
   },
   "dependencies": {
     "Microsoft.Extensions.Compilation.Abstractions": "1.0.0-*",
-    "Microsoft.DotNet.Cli.Utils": {
-      "type": "build",
-      "version": "1.0.0-*"
-    },
+    "Microsoft.DotNet.Cli.Utils": "1.0.0-*",
     "Microsoft.Dnx.Runtime.CommandParsing.Sources": {
       "version": "1.0.0-*",
       "type": "build"
@@ -38,7 +35,7 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "NETStandard.Library": "1.0.0-rc2-23616",
+        "NETStandard.Library": "1.0.0-rc2-23704",
         "System.Diagnostics.TextWriterTraceListener": "4.0.0-rc2-23616",
         "System.Diagnostics.TraceSource": "4.0.0-rc2-23616",
         "System.Dynamic.Runtime": "4.0.11-rc2-23616",

@@ -3,12 +3,11 @@
 
 using System;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Microsoft.DotNet.Tools.Common
 {
-    internal static class PathUtility
+    public static class PathUtility
     {
         public static bool IsPlaceholderFile(string path)
         {
@@ -198,6 +197,18 @@ namespace Microsoft.DotNet.Tools.Common
             {
                 return GetPathWithBackSlashes(path);
             }
+        }
+
+        public static bool HasExtension(string filePath, string extension)
+        {
+            var comparison = StringComparison.Ordinal;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                comparison = StringComparison.OrdinalIgnoreCase;
+            }
+
+            return Path.GetExtension(filePath).Equals(extension, comparison);
         }
     }
 }

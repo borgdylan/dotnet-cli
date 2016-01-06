@@ -7,10 +7,7 @@
   "dependencies": {
     "Microsoft.DotNet.Compiler.Common": "1.0.0-*",
     "Microsoft.DotNet.ProjectModel": "1.0.0-*",
-    "Microsoft.DotNet.Cli.Utils": {
-      "type": "build",
-      "version": "1.0.0-*"
-    },
+    "Microsoft.DotNet.Cli.Utils": "1.0.0-*",
     "Microsoft.Extensions.CommandLineUtils.Sources": {
       "type": "build",
       "version": "1.0.0-*"
@@ -19,7 +16,7 @@
   "frameworks": {
     	"dnxcore50": {
         	"dependencies": {
-        		"NETStandard.Library": "1.0.0-rc2-23616",
+        		"NETStandard.Library": "1.0.0-rc2-23704",
     			"System.IO.Compression.ZipFile": "4.0.1-rc2-23616"
         	}
         },

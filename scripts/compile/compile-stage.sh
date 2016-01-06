@@ -24,6 +24,7 @@ source "$DIR/../common/_common.sh"
 
 PROJECTS=( \
     Microsoft.DotNet.Cli \
+    Microsoft.DotNet.ProjectModel.Server \
     Microsoft.DotNet.Tools.Builder \
     Microsoft.DotNet.Tools.Compiler \
     Microsoft.DotNet.Tools.Compiler.Csc \
@@ -34,6 +35,7 @@ PROJECTS=( \
     Microsoft.DotNet.Tools.Publish \
     Microsoft.DotNet.Tools.Repl \
     Microsoft.DotNet.Tools.Repl.Csi \
+    dotnet-restore \
     Microsoft.DotNet.Tools.Resgen \
     Microsoft.DotNet.Tools.Run \
     Microsoft.DotNet.Tools.Test \
@@ -61,7 +63,7 @@ RUNTIME_OUTPUT_DIR="$OUTPUT_DIR/runtime/coreclr"
 for project in ${PROJECTS[@]}
 do
 echo dotnet publish --framework "$TFM" --runtime "$RID" --output "$OUTPUT_DIR/bin" --configuration "$CONFIGURATION" "$REPOROOT/src/$project" 
-    dotnet publish --framework "$TFM" --runtime "$RID" --output "$OUTPUT_DIR/bin" --configuration "$CONFIGURATION" "$REPOROOT/src/$project"
+    dotnet publish --native-subdirectory --framework "$TFM" --runtime "$RID" --output "$OUTPUT_DIR/bin" --configuration "$CONFIGURATION" "$REPOROOT/src/$project"
 done
 
 # Bring in the runtime
@@ -91,3 +93,29 @@ cd $OUTPUT_DIR
 # Fix up permissions. Sometimes they get dropped with the wrong info
 find . -type f | xargs chmod 644
 $REPOROOT/scripts/build/fix-mode-flags.sh
+
+info "Crossgenning Roslyn compiler ..."
+$REPOROOT/scripts/crossgen/crossgen_roslyn.sh "$OUTPUT_DIR/bin"
+
+# Make OUTPUT_DIR Folder Accessible
+chmod -R a+r $OUTPUT_DIR
+
+# Copy DNX in to OUTPUT_DIR
+cp -R $DNX_ROOT $OUTPUT_DIR/bin/dnx
+
+# Copy and CHMOD the dotnet-dnx script
+cp $REPOROOT/scripts/dotnet-dnx.sh $OUTPUT_DIR/bin/dotnet-dnx
+chmod a+x $OUTPUT_DIR/bin/dotnet-dnx
+
+# No compile native support in centos yet
+# https://github.com/dotnet/cli/issues/453
+if [ "$OSNAME" != "centos"  ]; then
+    # Copy in AppDeps
+    header "Acquiring Native App Dependencies"
+    DOTNET_HOME=$OUTPUT_DIR DOTNET_TOOLS=$OUTPUT_DIR $REPOROOT/scripts/build/build_appdeps.sh "$OUTPUT_DIR/bin"
+fi
+
+# Stamp the output with the commit metadata
+COMMIT=$(git rev-parse HEAD)
+echo $COMMIT > $OUTPUT_DIR/.version
+echo $DOTNET_BUILD_VERSION >> $OUTPUT_DIR/.version

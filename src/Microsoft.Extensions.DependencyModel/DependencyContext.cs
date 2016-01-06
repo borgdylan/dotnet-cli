@@ -12,23 +12,30 @@ namespace Microsoft.Extensions.DependencyModel
     {
         private const string DepsResourceSufix = ".deps.json";
 
-        public DependencyContext(string target, string runtime, Library[] compileLibraries, Library[] runtimeLibraries)
+        private static Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
+
+        public DependencyContext(string target, string runtime, CompilationOptions compilationOptions, Library[] compileLibraries, Library[] runtimeLibraries)
         {
             Target = target;
             Runtime = runtime;
+            CompilationOptions = compilationOptions;
             CompileLibraries = compileLibraries;
             RuntimeLibraries = runtimeLibraries;
         }
 
-        public string Target { get; set; }
+        public static DependencyContext Default => _defaultContext.Value;
 
-        public string Runtime { get; set; }
+        public string Target { get; }
+
+        public string Runtime { get; }
+
+        public CompilationOptions CompilationOptions { get; }
 
         public IReadOnlyList<Library> CompileLibraries { get; }
 
         public IReadOnlyList<Library> RuntimeLibraries { get; }
 
-        public static DependencyContext Load()
+        private static DependencyContext LoadDefault()
         {
             var entryAssembly = (Assembly)typeof(Assembly).GetTypeInfo().GetDeclaredMethod("GetEntryAssembly").Invoke(null, null);
             var stream = entryAssembly.GetManifestResourceStream(entryAssembly.GetName().Name + DepsResourceSufix);

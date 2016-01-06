@@ -13,6 +13,7 @@ param(
 
 $Projects = @(
     "Microsoft.DotNet.Cli",
+    "Microsoft.DotNet.ProjectModel.Server",
     "Microsoft.DotNet.Tools.Builder",
     "Microsoft.DotNet.Tools.Compiler",
     "Microsoft.DotNet.Tools.Compiler.Csc",
@@ -21,11 +22,12 @@ $Projects = @(
     "Microsoft.DotNet.Tools.New",
     "Microsoft.DotNet.Tools.Pack",
     "Microsoft.DotNet.Tools.Publish",
+    "dotnet-restore",
     "Microsoft.DotNet.Tools.Repl",
     "Microsoft.DotNet.Tools.Repl.Csi",
     "Microsoft.DotNet.Tools.Resgen",
     "Microsoft.DotNet.Tools.Run",
-    "Microsoft.DotNet.Tools.Test"    
+    "Microsoft.DotNet.Tools.Test"
 )
 
 $BinariesForCoreHost = @(
@@ -50,9 +52,9 @@ $RuntimeOutputDir = "$OutputDir\runtime\coreclr"
 
 # Publish each project
 $Projects | ForEach-Object {
-    dotnet publish --framework "$Tfm" --runtime "$Rid" --output "$OutputDir\bin" --configuration "$Configuration" "$RepoRoot\src\$_"
+    dotnet publish --native-subdirectory --framework "$Tfm" --runtime "$Rid" --output "$OutputDir\bin" --configuration "$Configuration" "$RepoRoot\src\$_"
     if (!$?) {
-        Write-Host Command failed: dotnet publish --framework "$Tfm" --runtime "$Rid" --output "$OutputDir\bin" --configuration "$Configuration" "$RepoRoot\src\$_"
+        Write-Host Command failed: dotnet publish --native-subdirectory --framework "$Tfm" --runtime "$Rid" --output "$OutputDir\bin" --configuration "$Configuration" "$RepoRoot\src\$_"
         exit 1
     }
 }
@@ -63,7 +65,6 @@ if (!$?) {
     Write-Host Command failed: dotnet publish --framework "$Tfm" --runtime "$Rid" --output "$RuntimeOutputDir" --configuration "$Configuration" "$RepoRoot\src\Microsoft.DotNet.Runtime"
     Exit 1
 }
-
 
 # Clean up bogus additional files
 $FilesToClean | ForEach-Object {
@@ -84,3 +85,18 @@ $BinariesForCoreHost | ForEach-Object {
     mv $OutputDir\bin\$_.exe $OutputDir\bin\$_.dll
     cp $OutputDir\bin\corehost.exe $OutputDir\bin\$_.exe
 }
+
+# Crossgen Roslyn
+header "Crossgening Roslyn compiler ..."
+_cmd "$RepoRoot\scripts\crossgen\crossgen_roslyn.cmd ""$OutputDir"""
+
+# Copy dnx into stage OutputDir
+cp -rec "$DnxRoot\" "$OutputDir\bin\dnx\"
+
+# Copy in the dotnet-dnx script
+cp "$RepoRoot\scripts\dotnet-dnx.cmd" "$OutputDir\bin\dotnet-dnx.cmd"
+
+# Copy in AppDeps
+$env:PATH = "$OutputDir\bin;$StartPath"
+header "Acquiring Native App Dependencies"
+_cmd "$RepoRoot\scripts\build\build_appdeps.cmd ""$OutputDir""" 

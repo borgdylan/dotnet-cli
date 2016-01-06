@@ -15,7 +15,7 @@ using NuGet.Frameworks;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
-    internal class Command
+    public class Command
     {
         private readonly Process _process;
         private readonly StreamForwarder _stdOut;
@@ -145,7 +145,7 @@ namespace Microsoft.DotNet.Cli.Utils
 
                     return fileNames.Contains(commandName + FileNameSuffixes.DotNet.Exe) &&
                            fileNames.Contains(commandName + FileNameSuffixes.DotNet.DynamicLib) &&
-                           fileNames.Contains(commandName + FileNameSuffixes.DotNet.Deps);
+                           fileNames.Contains(commandName + FileNameSuffixes.Deps);
                 });
 
             if (commandPackage == null) return null;
@@ -343,7 +343,7 @@ namespace Microsoft.DotNet.Cli.Utils
         }
     }
 
-    internal sealed class StreamForwarder
+    public sealed class StreamForwarder
     {
         private const int DefaultBufferSize = 256;
 
@@ -353,12 +353,12 @@ namespace Microsoft.DotNet.Cli.Utils
         private Action<string> _write;
         private Action<string> _writeLine;
 
-        internal StreamForwarder(int bufferSize = DefaultBufferSize)
+        public StreamForwarder(int bufferSize = DefaultBufferSize)
         {
             _bufferSize = bufferSize;
         }
 
-        internal void Capture()
+        public void Capture()
         {
             if (_capture != null)
             {
@@ -367,12 +367,12 @@ namespace Microsoft.DotNet.Cli.Utils
             _capture = new StringWriter();
         }
 
-        internal string GetCapturedOutput()
+        public string GetCapturedOutput()
         {
             return _capture?.GetStringBuilder()?.ToString();
         }
 
-        internal void ForwardTo(Action<string> write, Action<string> writeLine)
+        public void ForwardTo(Action<string> write, Action<string> writeLine)
         {
             if (writeLine == null)
             {
@@ -386,14 +386,14 @@ namespace Microsoft.DotNet.Cli.Utils
             _writeLine = writeLine;
         }
 
-        internal Thread BeginRead(TextReader reader)
+        public Thread BeginRead(TextReader reader)
         {
             var thread = new Thread(() => Read(reader)) { IsBackground = true };
             thread.Start();
             return thread;
         }
 
-        internal void Read(TextReader reader)
+        public void Read(TextReader reader)
         {
             _builder = new StringBuilder();
             var buffer = new char[_bufferSize];
