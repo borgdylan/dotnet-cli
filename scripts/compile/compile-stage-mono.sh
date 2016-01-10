@@ -26,8 +26,9 @@ source "$DIR/../common/_common-mono.sh"
 
 PROJECTS=( \
     Microsoft.DotNet.Cli \
-    Microsoft.DotNet.Tools.Compiler \
+    Microsoft.DotNet.ProjectModel.Server \
     Microsoft.DotNet.Tools.Builder \
+    Microsoft.DotNet.Tools.Compiler \
     Microsoft.DotNet.Tools.Compiler.Csc \
     Microsoft.DotNet.Tools.Compiler.Fsc \
     Microsoft.DotNet.Tools.New \
@@ -35,6 +36,7 @@ PROJECTS=( \
     Microsoft.DotNet.Tools.Publish \
     Microsoft.DotNet.Tools.Repl \
     Microsoft.DotNet.Tools.Repl.Csi \
+    dotnet-restore \
     Microsoft.DotNet.Tools.Resgen \
     Microsoft.DotNet.Tools.Run \
     Microsoft.DotNet.Tools.Test \
@@ -110,3 +112,29 @@ cd $OUTPUT_DIR
 # Fix up permissions. Sometimes they get dropped with the wrong info
 find . -type f | xargs chmod 644
 $REPOROOT/scripts/build/fix-mode-flags-mono.sh
+
+#echo "Crossgenning Roslyn compiler ..."
+#$REPOROOT/scripts/crossgen/crossgen_roslyn.sh "$STAGE2_DIR/bin"
+
+# Make OUTPUT_DIR Folder Accessible
+chmod -R a+r $OUTPUT_DIR
+
+# Copy DNX in to OUTPUT_DIR
+cp -R $DNX_ROOT $OUTPUT_DIR/bin/dnx
+
+# Copy and CHMOD the dotnet-dnx script
+cp $REPOROOT/scripts/dotnet-dnx.sh $OUTPUT_DIR/bin/dotnet-dnx
+chmod a+x $OUTPUT_DIR/bin/dotnet-dnx
+
+# No compile native support in centos yet
+# https://github.com/dotnet/cli/issues/453
+#if [ "$OSNAME" != "centos"  ]; then
+#    # Copy in AppDeps
+#    header "Acquiring Native App Dependencies"
+#    DOTNET_HOME=$STAGE2_DIR DOTNET_TOOLS=$STAGE2_DIR $REPOROOT/scripts/build/build_appdeps.sh "$STAGE2_DIR/bin"
+#fi
+
+# Stamp the output with the commit metadata
+COMMIT=$(git rev-parse HEAD)
+echo $COMMIT > $OUTPUT_DIR/.version
+echo $DOTNET_BUILD_VERSION >> $OUTPUT_DIR/.version
