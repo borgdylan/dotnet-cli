@@ -37,19 +37,12 @@ fi
 header "Compiling"
 $REPOROOT/scripts/compile/compile.sh
 
-# Run tests on the stage2 output
+# Put stage2 on the PATH now that we have a build
+export DOTNET_TOOLS=$STAGE1_DIR
+export PATH=$STAGE2_DIR/bin:$PATH
+
 header "Testing stage2..."
 DOTNET_HOME=$STAGE2_DIR DOTNET_TOOLS=$STAGE2_DIR $REPOROOT/scripts/test/runtests.sh
 
 header "Validating Dependencies"
 $REPOROOT/scripts/test/validate-dependencies.sh
-
-header "Generating tarball"
-$REPOROOT/scripts/package/package.sh
-
-if [ ! -z "$NOPACKAGE" ]; then
-    header "Generating Native Installer"
-    $REPOROOT/scripts/package/package-native.sh
-else
-    header "Skipping packaging"
-fi

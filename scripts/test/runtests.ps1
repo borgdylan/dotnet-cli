@@ -5,11 +5,15 @@
 
 . "$PSScriptRoot\..\common\_common.ps1"
 
+$failCount = 0
+
 $TestBinRoot = "$RepoRoot\artifacts\tests"
 
 $TestProjects = @(
     "E2E",
+    "StreamForwarderTests"
     "Microsoft.DotNet.Tools.Publish.Tests"
+    "Microsoft.DotNet.Tools.Compiler.Tests"
 )
 
 # Publish each test project
@@ -44,7 +48,7 @@ pushd "$TestBinRoot"
 
 # Run each test project
 $TestProjects | ForEach-Object {
-    & "corerun.exe"  "xunit.console.netcore.exe" "$_.dll" -xml "$_-testResults.xml" -notrait category=failing
+    & ".\corerun" "xunit.console.netcore.exe" "$_.dll" -xml "$_-testResults.xml" -notrait category=failing
     $exitCode = $LastExitCode
     if ($exitCode -ne 0) {
         $failingTests += "$_"
@@ -60,8 +64,7 @@ if ($failCount -ne 0) {
     $failingTests | ForEach-Object {
         Write-Host -ForegroundColor Red "$_.dll failed. Logs in '$TestBinRoot\$_-testResults.xml'"
     }
-}
-else {
+} else {
     Write-Host -ForegroundColor Green "All the tests passed!"
 }
 

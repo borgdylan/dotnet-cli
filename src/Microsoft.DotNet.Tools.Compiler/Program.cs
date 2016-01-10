@@ -13,6 +13,7 @@ using Microsoft.DotNet.ProjectModel.Compilation;
 using Microsoft.DotNet.ProjectModel.Utilities;
 using NuGet.Frameworks;
 using Microsoft.Extensions.DependencyModel;
+using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Microsoft.DotNet.Tools.Compiler
 {
@@ -62,9 +63,9 @@ namespace Microsoft.DotNet.Tools.Compiler
             var nativeOutputPath = Path.Combine(outputPath, "native");
             var intermediateOutputPath = 
                 context.GetIntermediateOutputPath(args.ConfigValue, args.IntermediateValue, outputPath);
-
+            var nativeIntermediateOutputPath = Path.Combine(intermediateOutputPath, "native");
             Directory.CreateDirectory(nativeOutputPath);
-            Directory.CreateDirectory(intermediateOutputPath);
+            Directory.CreateDirectory(nativeIntermediateOutputPath);
 
             var compilationOptions = context.ProjectFile.GetCompilerOptions(context.TargetFramework, args.ConfigValue);
             var managedOutput = 
@@ -132,14 +133,14 @@ namespace Microsoft.DotNet.Tools.Compiler
 
             // Intermediate Path
             nativeArgs.Add("--temp-output");
-            nativeArgs.Add($"{intermediateOutputPath}");
+            nativeArgs.Add($"{nativeIntermediateOutputPath}");
 
             // Output Path
             nativeArgs.Add("--output");
             nativeArgs.Add($"{nativeOutputPath}");            
 
             // Write Response File
-            var rsp = Path.Combine(intermediateOutputPath, $"dotnet-compile-native.{context.ProjectFile.Name}.rsp");
+            var rsp = Path.Combine(nativeIntermediateOutputPath, $"dotnet-compile-native.{context.ProjectFile.Name}.rsp");
             File.WriteAllLines(rsp, nativeArgs);
 
             // TODO Add -r assembly.dll for all Nuget References
@@ -250,13 +251,10 @@ namespace Microsoft.DotNet.Tools.Compiler
 
             compilerArgs.AddRange(references.Select(r => $"--reference:{r}"));
 
-            var runtimeContext = ProjectContext.Create(context.ProjectDirectory, context.TargetFramework, new[] { RuntimeIdentifier.Current });
-            var libraryExporter = runtimeContext.CreateExporter(args.ConfigValue);
-
             if (compilationOptions.PreserveCompilationContext == true)
             {
                 var dependencyContext = DependencyContextBuilder.Build(compilationOptions,
-                    libraryExporter,
+                    exporter,
                     args.ConfigValue,
                     context.TargetFramework,
                     context.RuntimeIdentifier);
@@ -347,8 +345,9 @@ namespace Microsoft.DotNet.Tools.Compiler
 
             if (success && !args.NoHostValue && compilationOptions.EmitEntryPoint.GetValueOrDefault())
             {
-                var projectContext = ProjectContext.Create(context.ProjectDirectory, context.TargetFramework, new[] { RuntimeIdentifier.Current });
-                projectContext
+                var rids = PlatformServices.Default.Runtime.GetAllCandidateRuntimeIdentifiers();
+                var runtimeContext = ProjectContext.Create(context.ProjectDirectory, context.TargetFramework, rids);
+                runtimeContext
                     .MakeCompilationOutputRunnable(outputPath, args.ConfigValue);
             }
 

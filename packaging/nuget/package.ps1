@@ -26,7 +26,8 @@ $Projects = @(
     "Microsoft.DotNet.ProjectModel.Workspaces",
     "Microsoft.DotNet.Runtime",
     "Microsoft.Extensions.Testing.Abstractions",
-    "Microsoft.DotNet.ProjectModel.Loader"
+    "Microsoft.DotNet.ProjectModel.Loader",
+    "Microsoft.Extensions.DependencyModel"
 )
 
 foreach ($ProjectName in $Projects) {
@@ -36,7 +37,7 @@ foreach ($ProjectName in $Projects) {
         Write-Host "$toolsDir\dotnet restore failed for: $ProjectFile"
         Exit 1
     }
-    & $toolsDir\dotnet pack "$ProjectFile" --output "$IntermediatePackagesDir" $versionArg
+    & $toolsDir\dotnet pack "$ProjectFile" --basepath "Stage2Dir\bin" --output "$IntermediatePackagesDir" $versionArg
     if (!$?) {
         Write-Host "$toolsDir\dotnet pack failed for: $ProjectFile"
         Exit 1

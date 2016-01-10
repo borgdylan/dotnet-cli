@@ -6,13 +6,14 @@
 param(
     [string]$Configuration="Debug",
     [switch]$Offline,
-    [switch]$NoCache)
+    [switch]$NoCache,
+    [switch]$NoPackage)
 
 $ErrorActionPreference="Stop"
 
 . "$PSScriptRoot\..\common\_common.ps1"
 
-_ "$RepoRoot\scripts\build\generate-version.ps1"
+. "$RepoRoot\scripts\build\generate-version.ps1"
 
 header "Building dotnet tools version $($env:DOTNET_BUILD_VERSION) - $Configuration"
 header "Checking Pre-Reqs"
@@ -33,17 +34,19 @@ else {
 header "Compiling"
 _ "$RepoRoot\scripts\compile\compile.ps1" @("$Configuration")
 
+# Put stage2 on the PATH now that we have a build
+$env:PATH = "$Stage2Dir\bin;$env:PATH"
+$env:DOTNET_HOME = "$Stage2Dir"
+
 header "Running Tests"
 _ "$RepoRoot\scripts\test\runtests.ps1"
 
 header "Validating Dependencies"
 _ "$RepoRoot\scripts\test\validate-dependencies.ps1"
 
-header "Generating zip package"
-_ "$RepoRoot\scripts\package\package.ps1"
-
-header "Generating dotnet MSI"
-_ "$RepoRoot\packaging\windows\generatemsi.ps1" @("$Stage2Dir")
-
-header "Generating NuGet packages"
-_ "$RepoRoot\packaging\nuget\package.ps1" @("$Stage2Dir\bin", "$VersionSuffix")
+if ($NoPackage){
+    info "Skipping Packaging"
+}
+else {
+    _ "$RepoRoot\scripts\package\package.ps1"
+}

@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "dotnet-compile",
   "version": "1.0.0-*",
   "compilationOptions": {
@@ -9,14 +9,15 @@
     "Microsoft.DotNet.Compiler.Common": "1.0.0-*",
     "System.Reflection.Metadata": "1.1.0",
     "Microsoft.DotNet.Cli.Utils": "1.0.0-*",
+    "Microsoft.Extensions.PlatformAbstractions": "1.0.0-*",
+    "Microsoft.Extensions.DependencyModel": {
+        "type": "build",
+        "version": "1.0.0-*"
+    },
     "Microsoft.Extensions.CommandLineUtils.Sources": {
       "type": "build",
       "version": "1.0.0-*"
     },
-    "Microsoft.Extensions.DependencyModel": {
-      "type": "build",
-      "version": "1.0.0-*"
-    }
   },
   "frameworks": {
     	"dnxcore50": {

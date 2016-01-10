@@ -20,9 +20,10 @@ TestBinRoot="$REPOROOT/artifacts/tests"
 
 TestProjects=( \
     E2E \
+    StreamForwarderTests \
     Microsoft.DotNet.Tools.Publish.Tests \
+    Microsoft.DotNet.Tools.Compiler.Tests \
 )
-
 
 for project in ${TestProjects[@]}
 do
@@ -42,7 +43,7 @@ failCount=0
 
 for project in ${TestProjects[@]}
 do
-    ./corerun  "xunit.console.netcore.exe" "$project.dll" -xml "${project}-testResults.xml" -notrait category=failing
+    ./corerun "xunit.console.netcore.exe" "$project.dll" -xml "${project}-testResults.xml" -notrait category=failing
     exitCode=$?
     failCount+=$exitCode
     if [ $exitCode -ne 0 ]; then
