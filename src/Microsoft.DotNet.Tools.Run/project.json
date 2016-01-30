@@ -14,8 +14,9 @@
         "dnxcore50": {
         	"dependencies": {
         		"NETStandard.Library": "1.0.0-rc2-23704",
-    			"Microsoft.Net.Compilers.netcore": "1.2.0-beta1-20151228-02"
-        	}
+ 			    "Microsoft.Net.Compilers.netcore": "1.2.0-beta1-20160108-01"
+        	},
+        	"imports": "portable-net451+win8"
         },
         "net451": {
         	"dependencies": {
@@ -24,9 +25,5 @@
         }
     },
     "scripts": {
-        "postcompile": [
-            "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.dll\"",
-            "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.pdb\""
-        ]
     }
 }

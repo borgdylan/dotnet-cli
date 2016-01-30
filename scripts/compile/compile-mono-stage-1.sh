@@ -21,13 +21,8 @@ export PATH=$DOTNET_INSTALL_DIR/bin:$PATH
 
 # Build Stage 1
 header "Building stage1 dotnet using downloaded stage0 ..."
-OUTPUT_DIR=$STAGE1_DIR $REPOROOT/scripts/compile/compile-stage-mono.sh
-
-# Copy DNX in to stage1
-cp -R $DNX_ROOT $STAGE1_DIR/bin/dnx
-
-# Copy and CHMOD the dotnet-dnx script
-cp $REPOROOT/scripts/dotnet-dnx.sh $STAGE1_DIR/bin/dotnet-dnx
-chmod a+x $STAGE1_DIR/bin/dotnet-dnx
+export COMPILATION_OUTPUT_DIR=$STAGE1_COMPILATION_DIR
+export OUTPUT_DIR=$STAGE1_DIR
+$REPOROOT/scripts/compile/compile-stage-mono.sh
 
 export PATH=$StartPath

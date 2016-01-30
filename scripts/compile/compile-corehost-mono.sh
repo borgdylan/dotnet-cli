@@ -13,6 +13,7 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 source "$DIR/../common/_common-mono.sh"
+source "$DIR/../common/_clang.sh"
 
 header "Building corehost"
 
@@ -24,5 +25,11 @@ make
 
 # Publish to artifacts
 [ -d "$HOST_DIR" ] || mkdir -p $HOST_DIR
-cp "$REPOROOT/src/corehost/cmake/$RID/corehost" $HOST_DIR
+if [[ "$OSNAME" == "osx" ]]; then
+   COREHOST_LIBNAME=libhostpolicy.dylib
+else
+   COREHOST_LIBNAME=libhostpolicy.so
+fi
+cp "$REPOROOT/src/corehost/cmake/$RID/cli/corehost" $HOST_DIR
+cp "$REPOROOT/src/corehost/cmake/$RID/cli/dll/${COREHOST_LIBNAME}" $HOST_DIR
 popd 2>&1 >/dev/null

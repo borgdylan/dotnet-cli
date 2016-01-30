@@ -55,9 +55,9 @@ namespace Microsoft.DotNet.ProjectModel.Server
             _messengers = new List<Messenger<ProjectContextSnapshot>>
             {
                 new DependencyDiagnosticsMessenger(Transmit),
+                new ReferencesMessenger(Transmit),
                 new DependenciesMessenger(Transmit),
                 new CompilerOptionsMessenger(Transmit),
-                new ReferencesMessenger(Transmit),
                 new SourcesMessenger(Transmit)
             };
 
@@ -144,6 +144,10 @@ namespace Microsoft.DotNet.ProjectModel.Server
                 _initializedContext.Transmit(message);
                 _remote.GlobalErrorMessage = error;
             }
+            finally
+            {
+                Monitor.Exit(_processingLock);
+            }
         }
 
         private void DoProcessLoop()
@@ -151,7 +155,7 @@ namespace Microsoft.DotNet.ProjectModel.Server
             while (true)
             {
                 DrainInbox();
-                
+
                 UpdateProject();
                 SendOutgingMessages();
 
@@ -287,7 +291,7 @@ namespace Microsoft.DotNet.ProjectModel.Server
             {
                 _remote.ProjectContexts.Remove(framework);
             }
-            
+
             _globalErrorMessenger.UpdateRemote(_local, _remote);
         }
 

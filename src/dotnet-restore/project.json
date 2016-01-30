@@ -21,24 +21,29 @@
       "version": "1.0.0-*",
       "type": "build"
     },
-    "Microsoft.Extensions.Logging": "1.0.0-*",
+    "Microsoft.Extensions.Logging": "1.0.0-rc2-15935",
     "Newtonsoft.Json": "7.0.1"
   },
   "frameworks": {
     "dnxcore50": {
     	"dependencies": {
-    		"Microsoft.NETCore.ConsoleHost": "1.0.0-beta-23409",
-    		"NETStandard.Library": "1.0.0-rc2-23608",
-    		"System.Linq": "4.0.1-beta-23504",
-    		"System.Collections": "4.0.11-beta-23504"
-    	}
+    		"Microsoft.NETCore.Platforms": "1.0.1-rc2-23704",
+    		"Microsoft.NETCore.TestHost": "1.0.0-rc2-23704",
+    		"NETStandard.Library": "1.0.0-rc2-23704",
+    		"System.Linq.Expressions": "4.0.11-rc2-23704",
+    		"NuGet.CommandLine.XPlat": "3.4.0-beta-566"
+    	},
+    	"imports": "portable-net45+win8"
     },
-    "net451": {}
+    "net451": {
+    	"dependencies": {
+    		"Microsoft.Extensions.PlatformAbstractions":"1.0.0-rc2-16530",
+        	"NuGet.Commands":"3.4.0-beta-566",
+        	"System.Runtime.Serialization.Primitives":"4.0.0",
+        	"Microsoft.NETCore.Platforms":"1.0.1-beta-23516"
+    	}
+    }
   },
   "scripts": {
-    "postcompile": [
-      "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.dll\"",
-      "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.pdb\""
-    ]
   }
 }

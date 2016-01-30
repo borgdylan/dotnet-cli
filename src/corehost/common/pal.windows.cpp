@@ -75,7 +75,7 @@ bool pal::get_default_packages_directory(string_t* recv)
     {
         return false;
     }
-    append_path(&*recv, _X(".dnx"));
+    append_path(&*recv, _X(".nuget"));
     append_path(&*recv, _X("packages"));
     return true;
 }
@@ -96,14 +96,14 @@ bool pal::getenv(const char_t* name, string_t* recv)
         auto err = GetLastError();
         if (err != ERROR_ENVVAR_NOT_FOUND)
         {
-            trace::error(_X("Failed to read enviroment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
+            trace::error(_X("Failed to read environment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
         }
         return false;
     }
     auto buf = new char_t[length];
     if (::GetEnvironmentVariableW(name, buf, length) == 0)
     {
-        trace::error(_X("Failed to read enviroment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
+        trace::error(_X("Failed to read environment variable '%s', HRESULT: 0x%X"), name, HRESULT_FROM_WIN32(GetLastError()));
         return false;
     }
 

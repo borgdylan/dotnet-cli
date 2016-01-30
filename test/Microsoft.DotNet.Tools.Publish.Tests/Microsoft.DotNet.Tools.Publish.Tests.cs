@@ -1,15 +1,12 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
-using System.IO;
-using System.Runtime.InteropServices;
-using Microsoft.DotNet.Tools.Test.Utilities;
-using Xunit;
-using System.Linq;
 using System.Collections.Generic;
-using Microsoft.DotNet.ProjectModel;
+using System.IO;
+using System.Text.RegularExpressions;
+using Microsoft.DotNet.Tools.Test.Utilities;
 using Microsoft.Extensions.PlatformAbstractions;
+using Xunit;
 
 namespace Microsoft.DotNet.Tools.Publish.Tests
 {
@@ -40,6 +37,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         {
             // create unique directories in the 'temp' folder
             var root = Temp.CreateDirectory();
+            root.CopyFile(Path.Combine(_testProjectsRoot, "global.json"));
             var testAppDir = root.CreateDirectory("TestApp");
             var testLibDir = root.CreateDirectory("TestLibrary");
 
@@ -76,6 +74,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         {
             // create unique directories in the 'temp' folder
             var testDir = Temp.CreateDirectory();
+            testDir.CopyFile(Path.Combine(_testProjectsRoot, "global.json"));
             var testAppDir = Path.Combine(_testProjectsRoot, "TestAppWithContents");
 
             // copy projects to the temp dir
@@ -89,7 +88,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             publishCommand.Execute().Should().Pass();
 
             // make sure that the output dir has the content files
-            publishCommand.GetOutputDirectory().Should().HaveFile("testcontentfile.txt");            
+            publishCommand.GetOutputDirectory().Should().HaveFile("testcontentfile.txt");
         }
 
         [Fact]
@@ -97,6 +96,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         {
             // create unique directories in the 'temp' folder
             var root = Temp.CreateDirectory();
+            root.CopyFile(Path.Combine(_testProjectsRoot, "global.json"));
             var testAppDir = root.CreateDirectory("TestApp");
             var testLibDir = root.CreateDirectory("TestLibrary");
 
@@ -114,9 +114,10 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         {
             // create unique directories in the 'temp' folder
             var root = Temp.CreateDirectory();
+            root.CopyFile(Path.Combine(_testProjectsRoot, "global.json"));
             var testLibDir = root.CreateDirectory("TestLibrary");
 
-            //copy projects to the temp dir            
+            //copy projects to the temp dir
             CopyProjectToTempDir(Path.Combine(_testProjectsRoot, "TestLibrary"), testLibDir);
 
             RunRestore(testLibDir.Path);
@@ -132,10 +133,35 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             publishCommand.GetOutputDirectory().Should().HaveFile("System.Runtime.dll");
         }
 
+        [WindowsOnlyFact]
+        public void TestLibraryPublishTest()
+        {
+            // create unique directories in the 'temp' folder
+            var root = Temp.CreateDirectory();
+            var testLibDir = root.CreateDirectory("TestLibraryWithRunner");
+
+            //copy projects to the temp dir
+            CopyProjectToTempDir(Path.Combine(_testProjectsRoot, "TestLibraryWithRunner"), testLibDir);
+
+            RunRestore(testLibDir.Path);
+
+            var testProject = GetProjectPath(testLibDir);
+            var publishCommand = new PublishCommand(testProject);
+            publishCommand.Execute().Should().Pass();
+
+            publishCommand.GetOutputDirectory().Should().HaveFile("TestLibraryWithRunner.dll");
+            publishCommand.GetOutputDirectory().Should().HaveFile("TestLibraryWithRunner.pdb");
+            publishCommand.GetOutputDirectory().Should().HaveFile("TestLibraryWithRunner.deps");
+            publishCommand.GetOutputDirectory().Should().HaveFile("TestLibraryWithRunner.dll.config");
+            // dependencies should also be copied
+            publishCommand.GetOutputDirectory().Should().HaveFile("Newtonsoft.Json.dll");
+        }
+
         [Fact]
         public void CompilationFailedTest()
         {
             var testDir = Temp.CreateDirectory();
+            testDir.CopyFile(Path.Combine(_testProjectsRoot, "global.json"));
             var compileFailDir = Path.Combine(_testProjectsRoot, "CompileFail");
 
             CopyProjectToTempDir(compileFailDir, testDir);
@@ -146,6 +172,32 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             var publishCommand = new PublishCommand(testProject);
 
             publishCommand.Execute().Should().Fail();
+        }
+
+        [Fact]
+        public void PublishScriptsRun()
+        {
+            // create unique directories in the 'temp' folder
+            var root = Temp.CreateDirectory();
+            root.CopyFile(Path.Combine(_testProjectsRoot, "global.json"));
+            var testAppDir = root.CreateDirectory("TestApp");
+            var testLibDir = root.CreateDirectory("TestLibrary");
+
+            //copy projects to the temp dir
+            CopyProjectToTempDir(Path.Combine(_testProjectsRoot, "TestApp"), testAppDir);
+            CopyProjectToTempDir(Path.Combine(_testProjectsRoot, "TestLibrary"), testLibDir);
+
+            RunRestore(testAppDir.Path);
+            RunRestore(testLibDir.Path);
+
+            // run publish
+            var testProject = GetProjectPath(testAppDir);
+            var publishCommand = new PublishCommand(testProject);
+
+            var result = publishCommand.ExecuteWithCapturedOutput();
+
+            result.Should().StdOutMatchPattern("\nprepublish_output( \\?[^%]+\\?){5}.+\npostpublish_output( \\?[^%]+\\?){5}", RegexOptions.Singleline);
+            result.Should().Pass();
         }
 
         private void CopyProjectToTempDir(string projectDir, TempDirectory tempDir)

@@ -6,10 +6,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using Microsoft.Dnx.Runtime.Common.CommandLine;
 using Microsoft.DotNet.Cli.Compiler.Common;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.ProjectModel.Compilation;
+using Microsoft.DotNet.ProjectModel.Graph;
 using Microsoft.DotNet.ProjectModel.Utilities;
 using NuGet.Frameworks;
 using Microsoft.Extensions.DependencyModel;
@@ -59,17 +61,18 @@ namespace Microsoft.DotNet.Tools.Compiler
             ProjectContext context, 
             CompilerCommandApp args)
         {
-            var outputPath = context.GetOutputPath(args.ConfigValue, args.OutputValue);
+            var outputPathCalculator = context.GetOutputPathCalculator(args.OutputValue);
+            var outputPath = outputPathCalculator.GetCompilationOutputPath(args.ConfigValue);
             var nativeOutputPath = Path.Combine(outputPath, "native");
-            var intermediateOutputPath = 
-                context.GetIntermediateOutputPath(args.ConfigValue, args.IntermediateValue, outputPath);
+            var intermediateOutputPath =
+                outputPathCalculator.GetIntermediateOutputPath(args.ConfigValue, args.IntermediateValue);
             var nativeIntermediateOutputPath = Path.Combine(intermediateOutputPath, "native");
             Directory.CreateDirectory(nativeOutputPath);
             Directory.CreateDirectory(nativeIntermediateOutputPath);
 
             var compilationOptions = context.ProjectFile.GetCompilerOptions(context.TargetFramework, args.ConfigValue);
             var managedOutput = 
-                GetProjectOutput(context.ProjectFile, context.TargetFramework, args.ConfigValue, outputPath);
+                CompilerUtil.GetCompilationOutput(context.ProjectFile, context.TargetFramework, args.ConfigValue, outputPath);
             
             var nativeArgs = new List<string>();
 
@@ -158,8 +161,10 @@ namespace Microsoft.DotNet.Tools.Compiler
         private static bool CompileProject(ProjectContext context, CompilerCommandApp args)
         {
             // Set up Output Paths
-            string outputPath = context.GetOutputPath(args.ConfigValue, args.OutputValue);
-            string intermediateOutputPath = context.GetIntermediateOutputPath(args.ConfigValue, args.IntermediateValue, outputPath);
+            var outputPathCalculator = context.GetOutputPathCalculator(args.OutputValue);
+            var outputPath = outputPathCalculator.GetCompilationOutputPath(args.ConfigValue);
+            var intermediateOutputPath =
+                outputPathCalculator.GetIntermediateOutputPath(args.ConfigValue, args.IntermediateValue);
 
             Directory.CreateDirectory(outputPath);
             Directory.CreateDirectory(intermediateOutputPath);
@@ -197,7 +202,7 @@ namespace Microsoft.DotNet.Tools.Compiler
             }
 
             // Get compilation options
-            var outputName = GetProjectOutput(context.ProjectFile, context.TargetFramework, args.ConfigValue, outputPath);
+            var outputName = CompilerUtil.GetCompilationOutput(context.ProjectFile, context.TargetFramework, args.ConfigValue, outputPath);
 
             // Assemble args
             var compilerArgs = new List<string>()
@@ -206,20 +211,7 @@ namespace Microsoft.DotNet.Tools.Compiler
                 $"--out:{outputName}"
             };
 
-            var compilationOptions = context.ProjectFile.GetCompilerOptions(context.TargetFramework, args.ConfigValue);
-
-            // Path to strong naming key in environment variable overrides path in project.json
-            var environmentKeyFile = Environment.GetEnvironmentVariable(EnvironmentNames.StrongNameKeyFile);
-
-            if (!string.IsNullOrWhiteSpace(environmentKeyFile))
-            {
-                compilationOptions.KeyFile = environmentKeyFile;
-            }
-            else  if (!string.IsNullOrWhiteSpace(compilationOptions.KeyFile))
-            {
-                // Resolve full path to key file
-                compilationOptions.KeyFile = Path.GetFullPath(Path.Combine(context.ProjectFile.ProjectDirectory, compilationOptions.KeyFile));
-            }
+            var compilationOptions = CompilerUtil.ResolveCompilationOptions(context, args.ConfigValue);
 
             var references = new List<string>();
 
@@ -237,7 +229,7 @@ namespace Microsoft.DotNet.Tools.Compiler
                 {
                     if (projectDependency.Project.Files.SourceFiles.Any())
                     {
-                        var projectOutputPath = GetProjectOutput(projectDependency.Project, projectDependency.Framework, args.ConfigValue, outputPath);
+                        var projectOutputPath = CompilerUtil.GetCompilationOutput(projectDependency.Project, projectDependency.Framework, args.ConfigValue, outputPath);
                         references.Add(projectOutputPath);
                     }
                 }
@@ -286,7 +278,7 @@ namespace Microsoft.DotNet.Tools.Compiler
                 return false;
             }
             // Add project source files
-            var sourceFiles = context.ProjectFile.Files.SourceFiles;
+            var sourceFiles = CompilerUtil.GetCompilationSources(context);
             compilerArgs.AddRange(sourceFiles);
 
             var compilerName = CompilerUtil.ResolveCompilerName(context);
@@ -343,16 +335,37 @@ namespace Microsoft.DotNet.Tools.Compiler
                 success &= GenerateCultureResourceAssemblies(context.ProjectFile, dependencies, outputPath);
             }
 
+            bool generateBindingRedirects = false;
             if (success && !args.NoHostValue && compilationOptions.EmitEntryPoint.GetValueOrDefault())
             {
+                generateBindingRedirects = true;
                 var rids = PlatformServices.Default.Runtime.GetAllCandidateRuntimeIdentifiers();
                 var runtimeContext = ProjectContext.Create(context.ProjectDirectory, context.TargetFramework, rids);
                 runtimeContext
                     .MakeCompilationOutputRunnable(outputPath, args.ConfigValue);
             }
+            else if (!string.IsNullOrEmpty(context.ProjectFile.TestRunner))
+            {
+                generateBindingRedirects = true;
+                var projectContext =
+                    ProjectContext.Create(context.ProjectDirectory, context.TargetFramework,
+                        new[] { PlatformServices.Default.Runtime.GetLegacyRestoreRuntimeIdentifier()});
+
+                projectContext
+                    .CreateExporter(args.ConfigValue)
+                    .GetDependencies(LibraryType.Package)
+                    .WriteDepsTo(Path.Combine(outputPath, projectContext.ProjectFile.Name + FileNameSuffixes.Deps));
+            }
+
+            if (generateBindingRedirects && context.TargetFramework.IsDesktop())
+            {
+                context.GenerateBindingRedirects(exporter, outputName);
+            }
 
             return PrintSummary(diagnostics, sw, success);
         }
+
+
 
         private static void RunScripts(ProjectContext context, string name, Dictionary<string, string> contextVariables)
         {
@@ -364,20 +377,6 @@ namespace Microsoft.DotNet.Tools.Compiler
                     .Execute();
             }
         }
-
-        private static string GetProjectOutput(Project project, NuGetFramework framework, string configuration, string outputPath)
-        {
-            var compilationOptions = project.GetCompilerOptions(framework, configuration);
-            var outputExtension = ".dll";
-
-            if (framework.IsDesktop() && compilationOptions.EmitEntryPoint.GetValueOrDefault())
-            {
-                outputExtension = ".exe";
-            }
-
-            return Path.Combine(outputPath, project.Name + outputExtension);
-        }
-
         
         private static void CopyExport(string outputPath, LibraryExport export)
         {

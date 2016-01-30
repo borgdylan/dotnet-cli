@@ -96,7 +96,12 @@ void add_tpa_asset(
     }
 
     trace::verbose(_X("Adding tpa entry: %s"), asset_path.c_str());
-    output->append(asset_path);
+
+    // Workaround for CoreFX not being able to resolve sym links.
+    pal::string_t real_asset_path = asset_path;
+    pal::realpath(&real_asset_path);
+    output->append(real_asset_path);
+
     output->push_back(PATH_SEPARATOR);
     items->insert(asset_name);
 }
@@ -111,14 +116,14 @@ void add_mscorlib_to_tpa(const pal::string_t& clr_dir, std::set<pal::string_t>* 
     pal::string_t mscorlib_ni_path = clr_dir + DIR_SEPARATOR + _X("mscorlib.ni.dll");
     if (pal::file_exists(mscorlib_ni_path))
     {
-        add_tpa_asset(_X("mscorlib"),  mscorlib_ni_path, items, output);
+        add_tpa_asset(_X("mscorlib"), mscorlib_ni_path, items, output);
         return;
     }
 
     pal::string_t mscorlib_path = clr_dir + DIR_SEPARATOR + _X("mscorlib.dll");
     if (pal::file_exists(mscorlib_path))
     {
-        add_tpa_asset(_X("mscorlib"),  mscorlib_ni_path, items, output);
+        add_tpa_asset(_X("mscorlib"), mscorlib_ni_path, items, output);
         return;
     }
 }
@@ -133,15 +138,21 @@ void add_unique_path(
     std::set<pal::string_t>* existing,
     pal::string_t* output)
 {
-    if (existing->count(path))
+    // Resolve sym links.
+    pal::string_t real = path;
+    pal::realpath(&real);
+
+    if (existing->count(real))
     {
         return;
     }
 
-    trace::verbose(_X("Adding to %s path: %s"), type.c_str(), path.c_str());
-    output->append(path);
+    trace::verbose(_X("Adding to %s path: %s"), type.c_str(), real.c_str());
+
+    output->append(real);
+
     output->push_back(PATH_SEPARATOR);
-    existing->insert(path);
+    existing->insert(real);
 }
 
 } // end of anonymous namespace
@@ -340,7 +351,7 @@ bool deps_resolver_t::load()
 }
 
 // -----------------------------------------------------------------------------
-// Resolve path to the deps file from "args" and parse the deps file.
+// Parse the deps file.
 //
 // Returns:
 //    True if the file parse is successful or if file doesn't exist. False,
@@ -348,14 +359,7 @@ bool deps_resolver_t::load()
 //
 bool deps_resolver_t::parse_deps_file(const arguments_t& args)
 {
-    const auto& app_base = args.app_dir;
-    auto app_name = get_filename(args.managed_application);
-
-    m_deps_path.reserve(app_base.length() + 1 + app_name.length() + 5);
-    m_deps_path.append(app_base);
-    m_deps_path.push_back(DIR_SEPARATOR);
-    m_deps_path.append(app_name, 0, app_name.find_last_of(_X(".")));
-    m_deps_path.append(_X(".deps"));
+    m_deps_path = args.deps_path;
 
     return load();
 }
@@ -460,6 +464,11 @@ void deps_resolver_t::resolve_tpa_list(
         {
             add_tpa_asset(entry.asset_name, candidate, &items, output);
         }
+        // Is this entry present in the secondary package cache?
+        else if (entry.to_hash_matched_path(package_cache_dir, &candidate))
+        {
+            add_tpa_asset(entry.asset_name, candidate, &items, output);
+        }
         // Is this entry present locally?
         else if (m_local_assemblies.count(entry.asset_name))
         {
@@ -468,11 +477,6 @@ void deps_resolver_t::resolve_tpa_list(
         }
         // Is this entry present in the package restore dir?
         else if (entry.to_full_path(package_dir, &candidate))
-        {
-            add_tpa_asset(entry.asset_name, candidate, &items, output);
-        }
-        // Is this entry present in the secondary package cache?
-        else if (entry.to_hash_matched_path(package_cache_dir, &candidate))
         {
             add_tpa_asset(entry.asset_name, candidate, &items, output);
         }
@@ -542,25 +546,24 @@ void deps_resolver_t::resolve_probe_dirs(
         }
     }
 
-    // App local path
-    add_unique_path(asset_type, app_dir, &items, output);
+    pal::string_t candidate;
 
-    // Take care of the packages cached path
+    // Take care of the secondary cache path
     for (const deps_entry_t& entry : m_deps_entries)
     {
-        if (entry.asset_type != asset_type)
-        {
-            continue;
-        }
-
-        pal::string_t candidate;
-        // Package restore directory
-        if (entry.to_full_path(package_dir, &candidate))
+        if (entry.asset_type == asset_type && entry.to_hash_matched_path(package_cache_dir, &candidate))
         {
             add_unique_path(asset_type, action(candidate), &items, output);
         }
-        // Secondary cache
-        else if (entry.to_hash_matched_path(package_cache_dir, &candidate))
+    }
+
+    // App local path
+    add_unique_path(asset_type, app_dir, &items, output);
+
+    // Take care of the package restore path
+    for (const deps_entry_t& entry : m_deps_entries)
+    {
+        if (entry.asset_type == asset_type && entry.to_full_path(package_dir, &candidate))
         {
             add_unique_path(asset_type, action(candidate), &items, output);
         }

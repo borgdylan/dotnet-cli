@@ -1,6 +1,7 @@
-﻿using Microsoft.DotNet.ProjectModel;
+﻿using System;
+using Microsoft.DotNet.ProjectModel;
 
-namespace ProjectSanity.AnalysisRules.DependencyMismatch
+namespace MultiProjectValidator.AnalysisRules.DependencyMismatch
 {
     internal class DependencyInfo
     {
@@ -9,7 +10,7 @@ namespace ProjectSanity.AnalysisRules.DependencyMismatch
             return new DependencyInfo
             {
                 ProjectPath = context.ProjectFile.ProjectFilePath,
-                Version = library.Identity.Version.ToString(),
+                Version = library.Identity.Version?.ToString() ?? String.Empty,
                 Name = library.Identity.Name
             };
         }

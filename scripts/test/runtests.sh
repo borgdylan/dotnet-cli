@@ -12,6 +12,7 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   SOURCE="$(readlink "$SOURCE")"
   [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
+
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 source "$DIR/../common/_common.sh"
@@ -23,12 +24,18 @@ TestProjects=( \
     StreamForwarderTests \
     Microsoft.DotNet.Tools.Publish.Tests \
     Microsoft.DotNet.Tools.Compiler.Tests \
+    Microsoft.DotNet.Tools.Builder.Tests \
 )
 
 for project in ${TestProjects[@]}
 do
-    dotnet publish --framework "dnxcore50" --runtime "$RID" --output "$TestBinRoot" --configuration "$CONFIGURATION" "$REPOROOT/test/$project"
+    dotnet publish --framework "dnxcore50" --output "$TestBinRoot" --configuration "$CONFIGURATION" "$REPOROOT/test/$project"
 done
+
+if [ -d "$TestBinRoot/$CONFIGURATION/dnxcore50" ]
+then
+    cp -R -f $TestBinRoot/$CONFIGURATION/dnxcore50/* $TestBinRoot
+fi
 
 # copy TestProjects folder which is used by the test cases
 mkdir -p "$TestBinRoot/TestProjects"
@@ -47,13 +54,19 @@ do
     exitCode=$?
     failCount+=$exitCode
     if [ $exitCode -ne 0 ]; then
-        failedTests+=($project)
+        failedTests+=("${project}.dll")
     fi
 done
 
+"$REPOROOT/scripts/test/package-command-test.sh"
+if [ $? -ne 0 ]; then
+    failCount+=1
+    failedTests+=("package-command-test.sh")
+fi
+
 for test in ${failedTests[@]}
 do
-    error "$test.dll failed. Logs in '$TestBinRoot/${test}-testResults.xml'"
+    error "$test failed. Logs in '$TestBinRoot/${test}-testResults.xml'"
 done
 
 popd

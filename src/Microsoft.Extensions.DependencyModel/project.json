@@ -15,6 +15,16 @@
   "frameworks": {
     "net451": { },
     "dotnet5.4": {
+      "imports": "portable-net451+win8",
+      "dependencies": {
+        "System.IO.FileSystem": "4.0.1-rc2-23616",
+        "System.Linq": "4.0.1-rc2-23616",
+        "System.Runtime": "4.0.21-rc2-23616",
+        "System.Reflection": "4.1.0-rc2-23616",
+        "System.Dynamic.Runtime": "4.0.11-rc2-23616"
+      }
+    },
+    "dnxcore50": {
       "dependencies": {
         "System.IO.FileSystem": "4.0.1-rc2-23616",
         "System.Linq": "4.0.1-rc2-23616",
@@ -25,9 +35,5 @@
     }
   },
   "scripts": {
-    "postcompile": [
-       "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.dll\"",
-       "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.pdb\""
-    ]
   }
 }

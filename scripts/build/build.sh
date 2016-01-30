@@ -19,10 +19,24 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 source "$DIR/../common/_common.sh"
 source "$REPOROOT/scripts/build/generate-version.sh"
 
-header "Building dotnet tools version $DOTNET_BUILD_VERSION - $CONFIGURATION"
+## Temporarily redirect to the NuGet package installation location
+export NUGET_PACKAGES=~/.nuget/packages
+export DOTNET_PACKAGES=$NUGET_PACKAGES
+export DNX_PACKAGES=$NUGET_PACKAGES
+
+header "Building dotnet tools version $DOTNET_CLI_VERSION - $CONFIGURATION"
 header "Checking Pre-Reqs"
 
 $REPOROOT/scripts/test/check-prereqs.sh
+
+header "Adjusting file descriptors limit, if necessary"
+# Increases the file descriptors limit for this bash. It prevents an issue we were hitting during restore
+FILE_DESCRIPTOR_LIMIT=$( ulimit -n )
+if [ $FILE_DESCRIPTOR_LIMIT -lt 512 ]
+then
+    info "Increasing file description limit to 512"
+    ulimit -n 512
+fi
 
 header "Restoring Tools and Packages"
 
@@ -37,12 +51,11 @@ fi
 header "Compiling"
 $REPOROOT/scripts/compile/compile.sh
 
-# Put stage2 on the PATH now that we have a build
-export DOTNET_TOOLS=$STAGE1_DIR
-export PATH=$STAGE2_DIR/bin:$PATH
+header "Setting Stage2 as PATH, DOTNET_HOME, and DOTNET_TOOLS"
+export DOTNET_HOME=$STAGE2_DIR && export DOTNET_TOOLS=$STAGE2DIR && export PATH=$STAGE2_DIR/bin:$PATH 
 
-header "Testing stage2..."
-DOTNET_HOME=$STAGE2_DIR DOTNET_TOOLS=$STAGE2_DIR $REPOROOT/scripts/test/runtests.sh
+header "Running Tests"
+$REPOROOT/scripts/test/runtests.sh
 
 header "Validating Dependencies"
 $REPOROOT/scripts/test/validate-dependencies.sh

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
@@ -44,7 +45,40 @@ namespace Microsoft.DotNet.Tests.EndToEnd
 
             buildCommand.Execute().Should().Pass();
 
-            TestOutputExecutable(OutputDirectory, buildCommand.GetOutputExecutableName());
+            TestOutputExecutable(OutputDirectory, buildCommand.GetOutputExecutableName(), s_expectedOutput);
+        }
+
+        [Fact]
+        public void TestDotnetIncrementalBuild()
+        {
+            TestSetup();
+
+            // first build
+            var buildCommand = new BuildCommand(TestProject, output: OutputDirectory);
+            buildCommand.Execute().Should().Pass();
+            TestOutputExecutable(OutputDirectory, buildCommand.GetOutputExecutableName(), s_expectedOutput);
+
+            var binariesOutputDirectory = GetCompilationOutputPath(OutputDirectory, false);
+            var latestWriteTimeFirstBuild = GetLastWriteTimeOfDirectoryFiles(
+                binariesOutputDirectory);
+
+            // second build; should get skipped (incremental because no inputs changed)
+            buildCommand.Execute().Should().Pass();
+            TestOutputExecutable(OutputDirectory, buildCommand.GetOutputExecutableName(), s_expectedOutput);
+
+            var latestWriteTimeSecondBuild = GetLastWriteTimeOfDirectoryFiles(
+                binariesOutputDirectory);
+            Assert.Equal(latestWriteTimeFirstBuild, latestWriteTimeSecondBuild);
+
+            TouchSourceFileInDirectory(TestDirectory);
+
+            // third build; should get compiled because the source file got touched
+            buildCommand.Execute().Should().Pass();
+            TestOutputExecutable(OutputDirectory, buildCommand.GetOutputExecutableName(), s_expectedOutput);
+
+            var latestWriteTimeThirdBuild = GetLastWriteTimeOfDirectoryFiles(
+                binariesOutputDirectory);
+            Assert.NotEqual(latestWriteTimeSecondBuild, latestWriteTimeThirdBuild);
         }
 
         [Fact]
@@ -61,8 +95,7 @@ namespace Microsoft.DotNet.Tests.EndToEnd
 
             buildCommand.Execute().Should().Pass();
 
-            var nativeOut = Path.Combine(OutputDirectory, "native");
-            TestOutputExecutable(nativeOut, buildCommand.GetOutputExecutableName());
+            TestNativeOutputExecutable(OutputDirectory, buildCommand.GetOutputExecutableName(), s_expectedOutput);
         }
 
         [Fact]
@@ -78,8 +111,35 @@ namespace Microsoft.DotNet.Tests.EndToEnd
 
             buildCommand.Execute().Should().Pass();
 
-            var nativeOut = Path.Combine(OutputDirectory, "native");
-            TestOutputExecutable(nativeOut, buildCommand.GetOutputExecutableName());
+            TestNativeOutputExecutable(OutputDirectory, buildCommand.GetOutputExecutableName(), s_expectedOutput);
+        }
+
+        [Fact]
+        public void TestDotnetCompileNativeCppIncremental()
+        {
+            if (IsCentOS())
+            {
+                Console.WriteLine("Skipping native compilation tests on CentOS - https://github.com/dotnet/cli/issues/453");
+                return;
+            }
+
+            // first build
+            var buildCommand = new BuildCommand(TestProject, output: OutputDirectory, native: true, nativeCppMode: true);
+            var binariesOutputDirectory = GetCompilationOutputPath(OutputDirectory, false);
+
+            buildCommand.Execute().Should().Pass();
+
+            TestNativeOutputExecutable(OutputDirectory, buildCommand.GetOutputExecutableName(), s_expectedOutput);
+
+            var latestWriteTimeFirstBuild = GetLastWriteTimeOfDirectoryFiles(binariesOutputDirectory);
+
+            // second build; should be skipped because nothing changed
+            buildCommand.Execute().Should().Pass();
+
+            TestNativeOutputExecutable(OutputDirectory, buildCommand.GetOutputExecutableName(), s_expectedOutput);
+
+            var latestWriteTimeSecondBuild = GetLastWriteTimeOfDirectoryFiles(binariesOutputDirectory);
+            Assert.Equal(latestWriteTimeFirstBuild, latestWriteTimeSecondBuild);
         }
 
         [Fact]
@@ -108,7 +168,7 @@ namespace Microsoft.DotNet.Tests.EndToEnd
             var publishCommand = new PublishCommand(TestProject, output: OutputDirectory);
             publishCommand.Execute().Should().Pass();
 
-            TestOutputExecutable(OutputDirectory, publishCommand.GetOutputExecutable());    
+            TestOutputExecutable(OutputDirectory, publishCommand.GetOutputExecutable(), s_expectedOutput);    
         }
 
         private void TestSetup()
@@ -133,19 +193,6 @@ namespace Microsoft.DotNet.Tests.EndToEnd
             Directory.SetCurrentDirectory(currentDirectory);
         }
 
-        private void TestOutputExecutable(string outputDir, string executableName)
-        {
-            var executablePath = Path.Combine(outputDir, executableName);
-
-            var executableCommand = new TestCommand(executablePath);
-
-            var result = executableCommand.ExecuteWithCapturedOutput("");
-
-            result.Should().HaveStdOut(s_expectedOutput);
-            result.Should().NotHaveStdErr();
-            result.Should().Pass();
-        }
-
         private bool IsCentOS()
         {
             if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
@@ -159,6 +206,17 @@ namespace Microsoft.DotNet.Tests.EndToEnd
             }
 
             return false;
+        }
+
+        private static DateTime GetLastWriteTimeOfDirectoryFiles(string outputDirectory)
+        {
+            return Directory.EnumerateFiles(outputDirectory).Max(f => File.GetLastWriteTime(f));
+        }
+
+        private static void TouchSourceFileInDirectory(string directory)
+        {
+            var csFile = Directory.EnumerateFiles(directory).First(f => Path.GetExtension(f).Equals(".cs"));
+            File.SetLastWriteTimeUtc(csFile, DateTime.UtcNow);
         }
     }
 }

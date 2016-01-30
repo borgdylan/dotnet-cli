@@ -10,38 +10,25 @@ param(
 $toolsDir = $toolsDir.TrimEnd('\')
 $versionArg = ""
 if ($versionSuffix -ne "") {
-    $versionArg = "--version-suffix $VersionSuffix"
+    $versionArg = "--version-suffix $versionSuffix"
 }
 
 . "$PSScriptRoot\..\..\scripts\common\_common.ps1"
+. "$REPOROOT\scripts\package\projectsToPack.ps1"
 
 $IntermediatePackagesDir = "$RepoRoot\artifacts\packages\intermediate"
 $PackagesDir = "$RepoRoot\artifacts\packages"
 
 New-Item -ItemType Directory -Force -Path $IntermediatePackagesDir
 
-$Projects = @(
-    "Microsoft.DotNet.Cli.Utils",
-    "Microsoft.DotNet.ProjectModel",
-    "Microsoft.DotNet.ProjectModel.Workspaces",
-    "Microsoft.DotNet.Runtime",
-    "Microsoft.Extensions.Testing.Abstractions",
-    "Microsoft.DotNet.ProjectModel.Loader",
-    "Microsoft.Extensions.DependencyModel"
-)
-
-foreach ($ProjectName in $Projects) {
+foreach ($ProjectName in $ProjectsToPack) {
     $ProjectFile = "$RepoRoot\src\$ProjectName\project.json"
-    & $toolsDir\dotnet restore "$ProjectFile"
-    if (!$?) {
-        Write-Host "$toolsDir\dotnet restore failed for: $ProjectFile"
-        Exit 1
-    }
-    & $toolsDir\dotnet pack "$ProjectFile" --basepath "Stage2Dir\bin" --output "$IntermediatePackagesDir" $versionArg
+
+    & $toolsDir\dotnet pack "$ProjectFile" --basepath "$Stage2CompilationDir\bin" --output "$IntermediatePackagesDir" --configuration "$Configuration" $versionArg
     if (!$?) {
         Write-Host "$toolsDir\dotnet pack failed for: $ProjectFile"
         Exit 1
     }
 }
 
-Get-ChildItem $IntermediatePackagesDir -Filter *.nupkg | Copy-Item -Destination $PackagesDir
+Get-ChildItem $IntermediatePackagesDir\$Configuration -Filter *.nupkg | ? {$_.Name -NotLike "*.symbols.nupkg"} | Copy-Item -Destination $PackagesDir

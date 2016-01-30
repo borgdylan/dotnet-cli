@@ -1,4 +1,4 @@
-﻿{
+{
     "version": "1.0.0-*",
 
     "compilationOptions": {
@@ -6,8 +6,8 @@
     },
 
     "dependencies": {
-    	"System.CommandLine": "0.1.0-*",
-        "Microsoft.CodeAnalysis.CSharp":  "1.1.1",
+    	"System.CommandLine": "0.1.0-e160119-1",
+        "Microsoft.CodeAnalysis.CSharp":  "1.2.0-beta1-20160108-01",
         "Microsoft.DotNet.ProjectModel": "1.0.0-*",
         "Microsoft.DotNet.Cli.Utils": "1.0.0-*"
     },
@@ -16,7 +16,8 @@
         	"dependencies": {
         		"NETStandard.Library": "1.0.0-rc2-23704",
     			"System.Reflection": "4.0.10-rc2-23616"
-        	}
+        	},
+        	"imports": "portable-win8+net45"
         },
         "net451": {
         	"frameworkAssemblies": {
@@ -28,9 +29,5 @@
         }
     },
     "scripts": {
-        "postcompile": [
-            "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.dll\"",
-            "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.pdb\""
-        ]
     }
 }

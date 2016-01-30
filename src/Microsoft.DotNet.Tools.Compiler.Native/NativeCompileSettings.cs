@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.DotNet.Cli.Utils;
 
 namespace Microsoft.DotNet.Tools.Compiler.Native
@@ -69,6 +70,7 @@ namespace Microsoft.DotNet.Tools.Compiler.Native
                 _intermediateDirectory = value;
             }
         }
+        public bool EnableInterop { get; set; }
 
         public BuildConfiguration BuildType { get; set; }
         
@@ -80,12 +82,7 @@ namespace Microsoft.DotNet.Tools.Compiler.Native
         {
             get
             {
-                var referencePaths = new List<string>(_referencePaths)
-                {
-                    Path.Combine(AppDepSDKPath, "*.dll")
-                };
-
-                return referencePaths;
+                return _referencePaths;
             }            
         }
 
@@ -163,7 +160,6 @@ namespace Microsoft.DotNet.Tools.Compiler.Native
         private NativeCompileSettings()
         {
             _linkLibPaths = new List<string>();
-            _referencePaths = new List<string>();
             
             IlcPath = AppContext.BaseDirectory;
 
@@ -173,6 +169,8 @@ namespace Microsoft.DotNet.Tools.Compiler.Native
             BuildType = DefaultBuiltType;
             NativeMode = DefaultNativeModel;
             AppDepSDKPath = Path.Combine(AppContext.BaseDirectory, "appdepsdk");            
+
+            _referencePaths = new List<string>(Directory.EnumerateFiles(AppDepSDKPath, "*.dll"));
         }
 
         public static NativeCompileSettings Default

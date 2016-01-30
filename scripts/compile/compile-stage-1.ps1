@@ -9,9 +9,6 @@ header "Compiling stage1 dotnet using downloaded stage0 ..."
 $StartPath = $env:PATH
 $env:PATH = "$env:DOTNET_INSTALL_DIR\cli\bin;$StartPath"
 
-_ "$RepoRoot\scripts\compile\compile-stage.ps1" @("$Tfm","$Rid","$Configuration","$Stage1Dir","$RepoRoot","$HostDir")
-
-# Copy dnx into stage 1
-cp -rec "$DnxRoot\" "$Stage1Dir\bin\dnx\"
+_ "$RepoRoot\scripts\compile\compile-stage.ps1" @("$Tfm","$Rid","$Configuration","$Stage1Dir","$RepoRoot","$HostDir", "$Stage1CompilationDir")
 
 $env:PATH=$StartPath

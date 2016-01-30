@@ -1,0 +1,145 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>NuGet.CommandLine.XPlat</name>
+    </assembly>
+    <members>
+        <member name="T:NuGet.CommandLine.XPlat.CommandOutputLogger">
+            <summary>
+            Logger to print formatted command output.
+            </summary>
+        </member>
+        <member name="M:NuGet.CommandLine.XPlat.Program.CompleteTaskAsync(System.Collections.Generic.List{System.Threading.Tasks.Task{NuGet.Commands.RestoreSummary}})">
+            <summary>
+            Removes a task from the list and returns the restore summary.
+            </summary>
+        </member>
+        <member name="M:NuGet.CommandLine.XPlat.Program.GetSources(Microsoft.Dnx.Runtime.Common.CommandLine.CommandOption,Microsoft.Dnx.Runtime.Common.CommandLine.CommandOption,NuGet.Configuration.ISettings)">
+            <summary>
+            Returns a unique list of sources. New sources will be cached
+            and shared between restores.
+            </summary>
+        </member>
+        <member name="T:NuGet.CommandLine.XPlat.Strings">
+            <summary>
+               A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.ResourceManager">
+            <summary>
+               Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Culture">
+            <summary>
+               Overrides the current thread's CurrentUICulture property for all
+               resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.App_FullName">
+            <summary>
+               Looks up a localized string similar to NuGet Command Line.
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Log_Committing">
+            <summary>
+               Looks up a localized string similar to Committing restore....
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Log_ErrorSummary">
+            <summary>
+               Looks up a localized string similar to Errors in {0}.
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Log_FoundProjectRoot">
+            <summary>
+               Looks up a localized string similar to Found project root directory: {0}..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Log_LoadedProject">
+            <summary>
+               Looks up a localized string similar to Loaded project {0} from {1}..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Log_ReadingProject">
+            <summary>
+               Looks up a localized string similar to Reading project file {0}..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Log_RestoreComplete">
+            <summary>
+               Looks up a localized string similar to Restore completed in {0}ms..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Log_RestoreFailed">
+            <summary>
+               Looks up a localized string similar to Restore failed in {0}ms..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Log_RunningNonParallelRestore">
+            <summary>
+               Looks up a localized string similar to Running non-parallel restore..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Log_RunningParallelRestore">
+            <summary>
+               Looks up a localized string similar to Running restore with {0} concurrent jobs..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Log_UsingPackagesDirectory">
+            <summary>
+               Looks up a localized string similar to Using packages directory: {0}..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Restore_Arg_ProjectName_Description">
+            <summary>
+               Looks up a localized string similar to List of projects and project folders to restore. Each value can be: a path to a project.json or global.json file, or a folder to recursively search for project.json files..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Restore_Description">
+            <summary>
+               Looks up a localized string similar to Restores packages for a project and writes a lock file..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Restore_Switch_DisableParallel_Description">
+            <summary>
+               Looks up a localized string similar to Disables restoring multiple projects in parallel..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Restore_Switch_Fallback_Description">
+            <summary>
+               Looks up a localized string similar to A list of packages sources to use as a fallback..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Restore_Switch_Packages_Description">
+            <summary>
+               Looks up a localized string similar to Directory to install packages in..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Restore_Switch_Runtime_Description">
+            <summary>
+               Looks up a localized string similar to List of runtime identifiers to restore for..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Restore_Switch_Source_Description">
+            <summary>
+               Looks up a localized string similar to Specifies a NuGet package source to use during the restore..
+            </summary>
+        </member>
+        <member name="P:NuGet.CommandLine.XPlat.Strings.Switch_Verbosity">
+            <summary>
+               Looks up a localized string similar to The verbosity of logging to use. Allowed values: Debug, Verbose, Information, Warning, Error..
+            </summary>
+        </member>
+        <member name="T:NuGet.Shared.HashCodeCombiner">
+            <summary>
+            Hash code creator, based on the original NuGet hash code combiner/ASP hash code combiner implementations
+            </summary>
+        </member>
+        <member name="M:NuGet.Shared.HashCodeCombiner.GetHashCode(System.Object[])">
+            <summary>
+            Create a unique hash code for the given set of items
+            </summary>
+        </member>
+    </members>
+</doc>

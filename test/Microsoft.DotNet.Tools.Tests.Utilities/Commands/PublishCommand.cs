@@ -31,15 +31,19 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             _framework = framework;
             _runtime = runtime;
             _output = output;
-            _config = config;            
+            _config = config;
         }
 
-        
-
         public override CommandResult Execute(string args="")
-        {            
+        {
             args = $"publish {BuildArgs()} {args}";
             return base.Execute(args);
+        }
+
+        public override CommandResult ExecuteWithCapturedOutput(string args = "")
+        {
+            args = $"publish {BuildArgs()} {args}";
+            return base.ExecuteWithCapturedOutput(args);
         }
 
         public string ProjectName
@@ -52,12 +56,13 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
 
         private string BuildRelativeOutputPath()
         {
-            // lets try to build an approximate output path            
+            // lets try to build an approximate output path
             string config = string.IsNullOrEmpty(_config) ? "Debug" : _config;
-            string framework = string.IsNullOrEmpty(_framework) ? 
+            string framework = string.IsNullOrEmpty(_framework) ?
                 _project.GetTargetFrameworks().First().FrameworkName.GetShortFolderName() : _framework;
             string runtime = string.IsNullOrEmpty(_runtime) ? PlatformServices.Default.Runtime.GetLegacyRestoreRuntimeIdentifier() : _runtime;
-            string output = Path.Combine("bin", config, framework, runtime);
+            //TODO: add runtime back as soon as it gets propagated through the various commands.
+            string output = Path.Combine(config, framework);
 
             return output;
         }
@@ -66,10 +71,10 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
         {
             if (!string.IsNullOrEmpty(_output))
             {
-                return new DirectoryInfo(_output);
+                return new DirectoryInfo(Path.Combine(_output, BuildRelativeOutputPath()));
             }
 
-            string output = Path.Combine(_project.ProjectDirectory, BuildRelativeOutputPath());
+            string output = Path.Combine(_project.ProjectDirectory, "bin", BuildRelativeOutputPath());
             return new DirectoryInfo(output);
         }
 

@@ -12,18 +12,10 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-REPOROOT="$( cd -P "$DIR/../../" && pwd )"
+source "$DIR/../../scripts/common/_common.sh"
 
-if [ -z "$DOTNET_BUILD_VERSION" ]; then
-    echo "Provide a version number (DOTNET_BUILD_VERSION) $DOTNET_BUILD_VERSION" && exit 1
-fi
-
-if [ "$(uname)" == "Darwin" ]; then
-    OSNAME=osx
-    RID=osx.10.10-x64
-else
-    echo "Package (OSX) only runs on Darwin"
-    exit 0
+if [ -z "$DOTNET_CLI_VERSION" ]; then
+    echo "Provide a version number (DOTNET_CLI_VERSION) $DOTNET_CLI_VERSION" && exit 1
 fi
 
 STAGE2_DIR=$REPOROOT/artifacts/$RID/stage2
@@ -36,21 +28,21 @@ fi
 PACKAGE_DIR=$REPOROOT/artifacts/packages/pkg
 [ -d "$PACKAGE_DIR" ] || mkdir -p $PACKAGE_DIR
 
-PACKAGE_NAME=$PACKAGE_DIR/dotnet-cli-x64.${DOTNET_BUILD_VERSION}.pkg
+PACKAGE_NAME=$PACKAGE_DIR/dotnet-cli-x64.${DOTNET_CLI_VERSION}.pkg
 #chmod -R 755 $STAGE2_DIR
 pkgbuild --root $STAGE2_DIR \
-         --version $DOTNET_BUILD_VERSION \
+         --version $DOTNET_CLI_VERSION \
          --scripts $DIR/scripts \
          --identifier com.microsoft.dotnet.cli.pkg.dotnet-osx-x64 \
          --install-location /usr/local/share/dotnet \
-         $DIR/dotnet-osx-x64.$DOTNET_BUILD_VERSION.pkg
+         $DIR/dotnet-osx-x64.$DOTNET_CLI_VERSION.pkg
 
-cat $DIR/Distribution-Template | sed "/{VERSION}/s//$DOTNET_BUILD_VERSION/g" > $DIR/Dist
+cat $DIR/Distribution-Template | sed "/{VERSION}/s//$DOTNET_CLI_VERSION/g" > $DIR/Dist
 
-productbuild --version $DOTNET_BUILD_VERSION --identifier com.microsoft.dotnet.cli --package-path $DIR --resources $DIR/resources --distribution $DIR/Dist $PACKAGE_NAME
+productbuild --version $DOTNET_CLI_VERSION --identifier com.microsoft.dotnet.cli --package-path $DIR --resources $DIR/resources --distribution $DIR/Dist $PACKAGE_NAME
 
 #Clean temp files
-rm $DIR/dotnet-osx-x64.$DOTNET_BUILD_VERSION.pkg
+rm $DIR/dotnet-osx-x64.$DOTNET_CLI_VERSION.pkg
 rm $DIR/Dist
 
 $REPOROOT/scripts/publish/publish.sh $PACKAGE_NAME

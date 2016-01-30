@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.IO;
 using Microsoft.DotNet.Tools.Test.Utilities;
 using Xunit;
@@ -16,6 +17,8 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         {
             // create unique directories in the 'temp' folder
             var root = Temp.CreateDirectory();
+            root.CopyFile(Path.Combine(_testProjectsRoot, "global.json"));
+
             var testLibDir = root.CreateDirectory("TestLibrary");
 
             // copy projects to the temp dir and restore them
@@ -29,11 +32,9 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             var result = buildCommand.ExecuteWithCapturedOutput();
             result.Should().Pass();
 
-            // Should have triggered some compiler warnings about missing XML doc comments
-            Assert.True(result.StdErr.Contains("warning CS1591"));
-
             // verify the output xml file
-            var outputXml = Path.Combine(outputDir, "TestLibrary.xml");
+            var outputXml = Path.Combine(outputDir, "Debug", "dnxcore50", "TestLibrary.xml");
+            Console.WriteLine("OUTPUT XML PATH: " + outputXml);
             Assert.True(File.Exists(outputXml));
             Assert.Contains("Gets the message from the helper", File.ReadAllText(outputXml));
         }

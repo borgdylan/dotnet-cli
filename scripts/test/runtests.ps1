@@ -11,9 +11,10 @@ $TestBinRoot = "$RepoRoot\artifacts\tests"
 
 $TestProjects = @(
     "E2E",
-    "StreamForwarderTests"
-    "Microsoft.DotNet.Tools.Publish.Tests"
-    "Microsoft.DotNet.Tools.Compiler.Tests"
+    "StreamForwarderTests",
+    "Microsoft.DotNet.Tools.Publish.Tests",
+    "Microsoft.DotNet.Tools.Compiler.Tests",
+    "Microsoft.DotNet.Tools.Builder.Tests"
 )
 
 # Publish each test project
@@ -23,6 +24,10 @@ $TestProjects | ForEach-Object {
         Write-Host Command failed: dotnet publish --framework "dnxcore50" --runtime "$Rid" --output "$TestBinRoot" --configuration "$Configuration" "$RepoRoot\test\$_"
         exit 1
     }
+}
+
+if (Test-Path $TestBinRoot\$Configuration\dnxcore50) {
+    cp $TestBinRoot\$Configuration\dnxcore50\* $TestBinRoot -force -recurse
 }
 
 ## Temporary Workaround for Native Compilation
@@ -58,6 +63,13 @@ $TestProjects | ForEach-Object {
 }
 
 popd
+
+& $RepoRoot\scripts\test\package-command-test.ps1
+$exitCode = $LastExitCode
+if ($exitCode -ne 0) {
+    $failCount += 1
+    $failingTests += "package-command-test"
+}
 
 if ($failCount -ne 0) {
     Write-Host -ForegroundColor Red "The following tests failed."

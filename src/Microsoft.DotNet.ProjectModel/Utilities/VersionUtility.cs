@@ -14,6 +14,11 @@ namespace Microsoft.DotNet.ProjectModel.Utilities
 {
     public static class VersionUtility
     {
+        public static readonly string DnxCoreFrameworkIdentifier = "DNXCore";
+        public static readonly string DnxFrameworkIdentifier = "DNX";
+        public static readonly string NetPlatformFrameworkIdentifier = ".NETPlatform";
+        public static readonly string NetFrameworkIdentifier = ".NETFramework";
+
         internal static NuGetVersion GetAssemblyVersion(string path)
         {
             #if DNXCORE50
@@ -22,6 +27,7 @@ namespace Microsoft.DotNet.ProjectModel.Utilities
             return new NuGetVersion(Assembly.LoadFile(path).GetName().Version);
             #endif
         }
+
         public static string RenderVersion(VersionRange range)
         {
             if (range == null)

@@ -63,7 +63,7 @@ The following command will perform native compilation using the C++ Codegenerato
 
     dotnet build --native --cpp
 
-This will drop a native single binary in `./bin/[configuration]/[framework]/native/[binary name]` that you can run.
+If you are in Windows, make sure that you run the above command inside the *VS 2015 x64 Native Tools* prompt, otherwise you will get errors. This command will drop a native single binary in `./bin/[configuration]/[framework]/native/[binary name]` that you can run.
 
 **Note:** At this point, only the `helloworld` and `dotnetbot` samples will work with native compilation.
 
@@ -74,6 +74,13 @@ Building from source
 
 If you are building from source, take note that the build depends on NuGet packages hosted on Myget, so if it is down, the build may fail. If that happens, you can always see the [Myget status page](http://status.myget.org/) for more info.  
 
+Also, when building from source, you need to set up the `DOTNET_HOME` environment variable. It needs to point to the parent directory of where `bin` and `runtime` directories are. 
+
+Known issues
+------------
+
+You can also consult the [known issues page](Documentation/known-issues.md) to find out the current issues and 
+to see the workarounds.  
 
 Questions & Comments
 --------------------

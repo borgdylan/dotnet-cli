@@ -11,17 +11,19 @@ BIN_DIR="$( cd $1 && pwd )"
 UNAME=`uname`
 
 # Always recalculate the RID because the package always uses a specific RID, regardless of OS X version or Linux distro.
-if [ "$UNAME" == "Darwin" ]; then
+if [ "$OSNAME" == "osx" ]; then
     RID=osx.10.10-x64
-elif [ "$UNAME" == "Linux" ]; then
+elif [ "$OSNAME" == "ubuntu" ]; then
     RID=ubuntu.14.04-x64
+elif [ "$OSNAME" == "centos" ]; then
+    RID=centos.7.1-x64
 else
-    echo "Unknown OS: $UNAME" 1>&2
+    echo "Unknown OS: $OSNAME" 1>&2
     exit 1
 fi
 
 # Replace with a robust method for finding the right crossgen.exe
-CROSSGEN_UTIL=$HOME/.dnx/packages/runtime.$RID.Microsoft.NETCore.Runtime.CoreCLR/1.0.1-rc2-23704/tools/crossgen
+CROSSGEN_UTIL=$NUGET_PACKAGES/runtime.$RID.Microsoft.NETCore.Runtime.CoreCLR/1.0.1-rc2-23704/tools/crossgen
 
 cd $BIN_DIR
 

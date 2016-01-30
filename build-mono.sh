@@ -29,9 +29,13 @@ else
     $REPOROOT/scripts/build/build-mono.sh
 fi
 
-if [ ! -z "$PACKAGE_IN_DOCKER" ]; then
-    export BUILD_COMMAND="/opt/code/scripts/package/package-native.sh"
-    $REPOROOT/scripts/docker/dockerbuild.sh
+if [ ! -z "$NOPACKAGE" ]; then
+    header "Skipping packaging"
 else
-    $REPOROOT/scripts/package/package.sh
+    if [ ! -z "$PACKAGE_IN_DOCKER" ]; then
+        export BUILD_COMMAND="/opt/code/scripts/package/package.sh"
+        $REPOROOT/scripts/docker/dockerbuild.sh
+    else
+        $REPOROOT/scripts/package/package.sh
+    fi
 fi

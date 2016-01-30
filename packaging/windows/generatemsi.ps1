@@ -63,11 +63,17 @@ function RunCandle
     Write-Host Running candle..
     $AuthWsxRoot =  Join-Path $RepoRoot "packaging\windows"
 
-    .\candle.exe -dDotnetSrc="$inputDir" -dMicrosoftEula="$RepoRoot\packaging\osx\resources\en.lproj\eula.rtf" -dBuildVersion="$env:DOTNET_BUILD_VERSION" -arch x64 `
+    .\candle.exe -dDotnetSrc="$inputDir" `
+        -dMicrosoftEula="$RepoRoot\packaging\osx\resources\en.lproj\eula.rtf" `
+        -dBuildVersion="$env:DOTNET_MSI_VERSION" `
+        -dDisplayVersion="$env:DOTNET_CLI_VERSION" `
+        -dReleaseSuffix="$env:ReleaseSuffix" `
+        -arch x64 `
         -ext WixDependencyExtension.dll `
         "$AuthWsxRoot\dotnet.wxs" `
         "$AuthWsxRoot\provider.wxs" `
         "$AuthWsxRoot\registrykeys.wxs" `
+        "$AuthWsxRoot\checkbuildtype.wxs" `
         $InstallFileswsx | Out-Host
 
     if($LastExitCode -ne 0)
@@ -92,6 +98,7 @@ function RunLight
         dotnet.wixobj `
         provider.wixobj `
         registrykeys.wixobj `
+        checkbuildtype.wixobj `
         $InstallFilesWixobj `
         -out $DotnetMSIOutput | Out-Host
 
@@ -115,7 +122,7 @@ if(!(Test-Path $PackageDir))
     mkdir $PackageDir | Out-Null
 }
 
-$DotnetMSIOutput = Join-Path $PackageDir "dotnet-win-x64.$env:DOTNET_BUILD_VERSION.msi"
+$DotnetMSIOutput = Join-Path $PackageDir "dotnet-win-x64.$env:DOTNET_CLI_VERSION.msi"
 
 Write-Host "Creating dotnet MSI at $DotnetMSIOutput"
 

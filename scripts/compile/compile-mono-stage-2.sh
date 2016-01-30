@@ -23,7 +23,9 @@ export PATH=$STAGE1_DIR/bin:$PATH
 
 # Compile Stage 2
 header "Compiling stage2 dotnet using just-built stage1 ..."
-OUTPUT_DIR=$STAGE2_DIR $REPOROOT/scripts/compile/compile-stage-mono.sh
+export COMPILATION_OUTPUT_DIR=$STAGE2_COMPILATION_DIR
+export OUTPUT_DIR=$STAGE2_DIR
+$REPOROOT/scripts/compile/compile-stage-mono.sh
 
 export DOTNET_HOME=$STAGE2_DIR 
 export DOTNET_TOOLS=$STAGE2_DIR 

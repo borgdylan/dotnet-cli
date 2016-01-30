@@ -17,7 +17,8 @@
         	"dependencies": {
         		"NETStandard.Library": "1.0.0-rc2-23704",
     			"Microsoft.FSharp.Compiler.netcore": "1.0.0-alpha-151218"
-        	}
+        	},
+        	"imports": "portable-net451+win8"
         },
         "net451": {
         	"dependencies": {
@@ -26,9 +27,5 @@
         }
     },
     "scripts": {
-        "postcompile": [
-            "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.dll\"",
-            "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.pdb\""
-        ]
     }
 }

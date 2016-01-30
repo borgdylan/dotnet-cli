@@ -20,58 +20,6 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
     {
         public static string ProjectName(this ProjectContext context) => context.RootProject.Identity.Name;
 
-        public static string GetOutputPath(this ProjectContext context, string configuration, string currentOutputPath)
-        {
-            var outputPath = string.Empty;
-
-            if (string.IsNullOrEmpty(currentOutputPath))
-            {
-                outputPath = Path.Combine(
-                    GetDefaultRootOutputPath(context, currentOutputPath),
-                    Constants.BinDirectoryName,
-                    configuration,
-                    context.TargetFramework.GetTwoDigitShortFolderName());
-            }
-            else
-            {
-                outputPath = currentOutputPath;
-            }
-
-            return outputPath;
-        }
-
-        public static string GetIntermediateOutputPath(this ProjectContext context, string configuration, string intermediateOutputValue, string currentOutputPath)
-        {
-            var intermediateOutputPath = string.Empty;
-
-            if (string.IsNullOrEmpty(intermediateOutputValue))
-            {
-                intermediateOutputPath = Path.Combine(
-                    GetDefaultRootOutputPath(context, currentOutputPath),
-                    Constants.ObjDirectoryName,
-                    configuration,
-                    context.TargetFramework.GetTwoDigitShortFolderName());
-            }
-            else
-            {
-                intermediateOutputPath = intermediateOutputValue;
-            }
-
-            return intermediateOutputPath;
-        }
-
-        public static string GetDefaultRootOutputPath(ProjectContext context, string currentOutputPath)
-        {
-            var rootOutputPath = string.Empty;
-
-            if (string.IsNullOrEmpty(currentOutputPath))
-            {
-                rootOutputPath = context.ProjectFile.ProjectDirectory;
-            }
-
-            return rootOutputPath;
-        }
-        
         public static void MakeCompilationOutputRunnable(this ProjectContext context, string outputPath, string configuration)
         {
             context
@@ -89,8 +37,6 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
                     .GetDependencies()
                     .SelectMany(e => e.RuntimeAssets())
                     .CopyTo(outputPath);
-
-                GenerateBindingRedirects(context, exporter, outputPath);
             }
             else
             {
@@ -102,7 +48,7 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
                     .SelectMany(e => e.RuntimeAssets())
                     .CopyTo(outputPath);
 
-                CoreHost.CopyTo(Path.Combine(outputPath, context.ProjectFile.Name + Constants.ExeSuffix));
+                CoreHost.CopyTo(outputPath, context.ProjectFile.Name + Constants.ExeSuffix);
             }
         }
 
@@ -117,7 +63,7 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
             targetDirectory = EnsureTrailingSlash(targetDirectory);
 
             var pathMap = sourceFiles
-                .ToDictionary(s => s, 
+                .ToDictionary(s => s,
                     s => Path.Combine(targetDirectory,
                         PathUtility.GetRelativePath(sourceDirectory, s)));
 
@@ -175,8 +121,7 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
             return files;
         }
 
-
-        private static void GenerateBindingRedirects(this ProjectContext context, LibraryExporter exporter, string outputPath)
+        public static void GenerateBindingRedirects(this ProjectContext context, LibraryExporter exporter, string outputName)
         {
             var existingConfig = new DirectoryInfo(context.ProjectDirectory)
                 .EnumerateFiles()
@@ -196,16 +141,25 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
 
             if (appConfig == null) { return; }
 
-            var path = Path.Combine(outputPath, context.ProjectFile.Name + ".exe.config");
+            var path = outputName + ".config";
             using (var stream = File.Create(path))
             {
                 appConfig.Save(stream);
             }
         }
-        
-        public static string GetDepsPath(this ProjectContext context, string buildConfiguration)
+
+        public static CommonCompilerOptions GetLanguageSpecificCompilerOptions(this ProjectContext context, NuGetFramework framework, string configurationName)
         {
-            return Path.Combine(context.GetOutputDirectoryPath(buildConfiguration), context.ProjectFile.Name + ".deps");
+            var baseOption = context.ProjectFile.GetCompilerOptions(framework, configurationName);
+
+            IReadOnlyList<string> defaultSuppresses;
+            var compilerName = context.ProjectFile.CompilerName ?? "csc";
+            if (DefaultCompilerWarningSuppresses.Suppresses.TryGetValue(compilerName, out defaultSuppresses))
+            {
+                baseOption.SuppressWarnings = (baseOption.SuppressWarnings ?? Enumerable.Empty<string>()).Concat(defaultSuppresses).Distinct();
+            }
+
+            return baseOption;
         }
     }
 }

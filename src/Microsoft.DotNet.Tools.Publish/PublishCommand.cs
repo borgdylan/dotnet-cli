@@ -11,6 +11,8 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.DotNet.Tools.Common;
+using Microsoft.DotNet.ProjectModel.Utilities;
 
 namespace Microsoft.DotNet.Tools.Publish
 {
@@ -56,6 +58,7 @@ namespace Microsoft.DotNet.Tools.Publish
         {
             NumberOfPublishedProjects = 0;
             NumberOfProjects = 0;
+
             foreach (var project in ProjectContexts)
             {
                 if (PublishProjectContext(project, OutputPath, Configuration, NativeSubdirectories))
@@ -86,35 +89,38 @@ namespace Microsoft.DotNet.Tools.Publish
         /// Publish the project for given 'framework (ex - dnxcore50)' and 'runtimeID (ex - win7-x64)'
         /// </summary>
         /// <param name="context">project that is to be published</param>
-        /// <param name="outputPath">Location of published files</param>
+        /// <param name="baseOutputPath">Location of published files</param>
         /// <param name="configuration">Debug or Release</param>
+        /// <param name="nativeSubdirectories"></param>
         /// <returns>Return 0 if successful else return non-zero</returns>
-        private static bool PublishProjectContext(ProjectContext context, string outputPath, string configuration, bool nativeSubdirectories)
+        private static bool PublishProjectContext(ProjectContext context, string baseOutputPath, string configuration, bool nativeSubdirectories)
         {
             Reporter.Output.WriteLine($"Publishing {context.RootProject.Identity.Name.Yellow()} for {context.TargetFramework.DotNetFrameworkName.Yellow()}/{context.RuntimeIdentifier.Yellow()}");
 
             var options = context.ProjectFile.GetCompilerOptions(context.TargetFramework, configuration);
+            var outputPathCalculator = context.GetOutputPathCalculator(baseOutputPath);
+            var outputPath = outputPathCalculator.GetCompilationOutputPath(configuration);
 
-            // Generate the output path
-            if (string.IsNullOrEmpty(outputPath))
+            var contextVariables = new Dictionary<string, string>
             {
-                outputPath = Path.Combine(
-                    context.ProjectFile.ProjectDirectory,
-                    Constants.BinDirectoryName,
-                    configuration,
-                    context.TargetFramework.GetTwoDigitShortFolderName(),
-                    context.RuntimeIdentifier);
-            }
+                { "publish:ProjectPath", context.ProjectDirectory },
+                { "publish:Configuration", configuration },
+                { "publish:OutputPath", outputPathCalculator.BaseCompilationOutputPath },
+                { "publish:Framework", context.TargetFramework.Framework },
+                { "publish:Runtime", context.RuntimeIdentifier },
+            };
 
-            if (!Directory.Exists(outputPath))
+            RunScripts(context, ScriptNames.PrePublish, contextVariables);
+
+            if (!Directory.Exists(outputPathCalculator.BaseCompilationOutputPath))
             {
-                Directory.CreateDirectory(outputPath);
+                Directory.CreateDirectory(outputPathCalculator.BaseCompilationOutputPath);
             }
 
             // Compile the project (and transitively, all it's dependencies)
             var result = Command.Create("dotnet-build",
                 $"--framework \"{context.TargetFramework.DotNetFrameworkName}\" " +
-                $"--output \"{outputPath}\" " +
+                $"--output \"{outputPathCalculator.BaseCompilationOutputPath}\" " +
                 $"--configuration \"{configuration}\" " +
                 "--no-host " +
                 $"\"{context.ProjectFile.ProjectDirectory}\"")
@@ -144,6 +150,8 @@ namespace Microsoft.DotNet.Tools.Publish
                 PublishFiles(export.NativeLibraries, outputPath, nativeSubdirectories);
             }
 
+            CopyContents(context, outputPath);
+
             // Publish a host if this is an application
             if (options.EmitEntryPoint.GetValueOrDefault())
             {
@@ -151,7 +159,10 @@ namespace Microsoft.DotNet.Tools.Publish
                 PublishHost(context, outputPath);
             }
 
+            RunScripts(context, ScriptNames.PostPublish, contextVariables);
+
             Reporter.Output.WriteLine($"Published to {outputPath}".Green().Bold());
+
             return true;
         }
 
@@ -162,17 +173,20 @@ namespace Microsoft.DotNet.Tools.Publish
                 return 0;
             }
 
-            var hostPath = Path.Combine(AppContext.BaseDirectory, Constants.HostExecutableName);
-            if (!File.Exists(hostPath))
+            foreach (var binaryName in Constants.HostBinaryNames)
             {
-                Reporter.Error.WriteLine($"Cannot find {Constants.HostExecutableName} in the dotnet directory.".Red());
-                return 1;
+                var hostBinaryPath = Path.Combine(AppContext.BaseDirectory, binaryName);
+                if (!File.Exists(hostBinaryPath))
+                {
+                    Reporter.Error.WriteLine($"Cannot find {binaryName} in the dotnet directory.".Red());
+                    return 1;
+                }
+
+                var outputBinaryName = binaryName.Equals(Constants.HostExecutableName) ? (context.ProjectFile.Name + Constants.ExeSuffix) : binaryName;
+                var outputBinaryPath = Path.Combine(outputPath, outputBinaryName);
+
+                File.Copy(hostBinaryPath, outputBinaryPath, overwrite: true);
             }
-
-            var outputExe = Path.Combine(outputPath, context.ProjectFile.Name + Constants.ExeSuffix);
-
-            // Copy the host
-            File.Copy(hostPath, outputExe, overwrite: true);
 
             return 0;
         }
@@ -264,6 +278,62 @@ namespace Microsoft.DotNet.Tools.Publish
                         yield return context;
                     }
                 }
+            }
+        }
+
+        private static void CopyContents(ProjectContext context, string outputPath)
+        {
+            var contentFiles = context.ProjectFile.Files.GetContentFiles();
+            Copy(contentFiles, context.ProjectDirectory, outputPath);
+        }
+
+        private static void Copy(IEnumerable<string> contentFiles, string sourceDirectory, string targetDirectory)
+        {
+            if (contentFiles == null)
+            {
+                throw new ArgumentNullException(nameof(contentFiles));
+            }
+
+            sourceDirectory = PathUtility.EnsureTrailingSlash(sourceDirectory);
+            targetDirectory = PathUtility.EnsureTrailingSlash(targetDirectory);
+
+            foreach (var contentFilePath in contentFiles)
+            {
+                Reporter.Verbose.WriteLine($"Publishing {contentFilePath.Green().Bold()} ...");
+
+                var fileName = Path.GetFileName(contentFilePath);
+
+                var targetFilePath = contentFilePath.Replace(sourceDirectory, targetDirectory);
+                var targetFileParentFolder = Path.GetDirectoryName(targetFilePath);
+
+                // Create directory before copying a file
+                if (!Directory.Exists(targetFileParentFolder))
+                {
+                    Directory.CreateDirectory(targetFileParentFolder);
+                }
+
+                File.Copy(
+                    contentFilePath,
+                    targetFilePath,
+                    overwrite: true);
+
+                // clear read-only bit if set
+                var fileAttributes = File.GetAttributes(targetFilePath);
+                if ((fileAttributes & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                {
+                    File.SetAttributes(targetFilePath, fileAttributes & ~FileAttributes.ReadOnly);
+                }
+            }
+        }
+
+        private static void RunScripts(ProjectContext context, string name, Dictionary<string, string> contextVariables)
+        {
+            foreach (var script in context.ProjectFile.Scripts.GetOrEmpty(name))
+            {
+                ScriptExecutor.CreateCommandForScript(context.ProjectFile, script, contextVariables)
+                    .ForwardStdErr()
+                    .ForwardStdOut()
+                    .Execute();
             }
         }
     }
