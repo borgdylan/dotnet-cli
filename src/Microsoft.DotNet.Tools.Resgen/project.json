@@ -22,7 +22,7 @@
         	},
         	"imports": "portable-net451+win8"
         },
-        "net451": {
+        "net461": {
         	"frameworkAssemblies": {
         		"System.Xml.Linq": "4.0.0.0",
         		"System.IO": "4.0.0.0"

@@ -1,4 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
-    <Relationship Type="http://schemas.microsoft.com/packaging/2010/07/manifest" Target="/NuGet.CommandLine.XPlat.nuspec" Id="R86b6bfa3c7d94e01" />
+    <Relationship Type="http://schemas.microsoft.com/packaging/2010/07/manifest" Target="/NuGet.CommandLine.XPlat.nuspec" Id="R6fb5b295c6a84142" />
 </Relationships>

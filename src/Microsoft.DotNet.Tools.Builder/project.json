@@ -22,7 +22,7 @@
         	},
         	"imports": "portable-win8+net45"
         },
-        "net451": {
+        "net461": {
         	"frameworkAssemblies": {
         		"System.IO": "4.0.0.0",
         		"System.Collections": "4.0.0.0"

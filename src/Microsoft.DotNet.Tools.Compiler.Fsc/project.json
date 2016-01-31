@@ -20,7 +20,7 @@
         	},
         	"imports": "portable-net451+win8"
         },
-        "net451": {
+        "net461": {
         	"dependencies": {
         		"FSharp.Compiler.Tools": "4.0.0.1"
         	}

@@ -13,6 +13,6 @@
         		"System.Runtime.Loader": "4.0.0-rc2-23704"
       		}
     	},
-    	"net451": { }
+    	"net461": { }
     }
 }

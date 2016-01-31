@@ -16,7 +16,7 @@ source "$COMMONDIR/_prettyprint.sh"
 source "$COMMONDIR/_rid.sh"
 
 # TODO: Replace this with a dotnet generation
-export TFM=net451
+export TFM=net461
 export REPOROOT=$(cd $COMMONDIR/../.. && pwd)
 export OUTPUT_ROOT=$REPOROOT/artifacts/$RID
 export DNX_DIR=$OUTPUT_ROOT/dnx

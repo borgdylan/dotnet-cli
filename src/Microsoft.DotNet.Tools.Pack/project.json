@@ -21,7 +21,7 @@
         	},
         	"imports": "portable-net451+win8"
         },
-        "net451": {
+        "net461": {
         	"frameworkAssemblies": {
         		"System.IO.Compression": "4.0.0.0",
         		"System.IO.Compression.FileSystem": "4.0.0.0"

@@ -22,7 +22,7 @@
  	 	"System.Runtime.Serialization.Primitives": "4.1.0-rc2-23704"
       }
     },
-    "net451": {
+    "net461": {
       "frameworkAssemblies": {
         "System.Runtime.Serialization": "4.0.0.0"
       }    

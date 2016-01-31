@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.Cli.Utils
                 RedirectStandardOutput = true
             };
             
-            #if NET451
+            #if NET461
             psi.UseShellExecute = false;
             #endif
 

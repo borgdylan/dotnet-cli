@@ -13,7 +13,7 @@
     "Newtonsoft.Json": "7.0.1"
   },
   "frameworks": {
-    "net451": { },
+    "net461": { },
     "dotnet5.4": {
       "imports": "portable-net451+win8",
       "dependencies": {
