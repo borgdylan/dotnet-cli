@@ -7,16 +7,17 @@
 
 $Rid = "win7-x64"
 $Tfm = "dnxcore50"
-$RepoRoot = Convert-Path "$PSScriptRoot\..\.."
+$RepoRoot = Resolve-Path "$PSScriptRoot\..\.."
 $OutputDir = "$RepoRoot\artifacts\$Rid"
-$DnxDir = "$OutputDir\dnx"
-$DnxRoot = "$DnxDir\bin"
 $Stage1Dir = "$OutputDir\stage1"
 $Stage1CompilationDir = "$OutputDir\stage1compilation"
 $Stage2Dir = "$OutputDir\stage2"
 $Stage2CompilationDir = "$OutputDir\stage2compilation"
 $HostDir = "$OutputDir\corehost"
 $PackageDir = "$RepoRoot\artifacts\packages\dnvm"
+$TestBinRoot = "$RepoRoot\artifacts\tests"
+$TestPackageDir = "$TestBinRoot\packages"
+
 $env:ReleaseSuffix = "dev"
 $env:Channel = "$env:ReleaseSuffix"
 
@@ -25,3 +26,7 @@ setEnvIfDefault "DOTNET_INSTALL_DIR"  "$(Convert-Path "$PSScriptRoot\..")\.dotne
 setEnvIfDefault "DOTNET_CLI_VERSION" "0.1.0.0"
 setPathAndHomeIfDefault "$Stage2Dir"
 setVarIfDefault "Configuration" "Debug"
+
+# Common Files which depend on above properties
+. $PSScriptRoot\_nuget.ps1
+. $PSScriptRoot\_configuration.ps1

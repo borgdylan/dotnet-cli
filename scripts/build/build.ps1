@@ -6,7 +6,6 @@
 param(
     [string]$Configuration="Debug",
     [switch]$Offline,
-    [switch]$NoCache,
     [switch]$NoPackage)
 
 $ErrorActionPreference="Stop"
@@ -14,18 +13,6 @@ $ErrorActionPreference="Stop"
 . "$PSScriptRoot\..\common\_common.ps1"
 
 . "$RepoRoot\scripts\build\generate-version.ps1"
-
-if ($env:CI_BUILD -eq "1") {
-    $env:NUGET_PACKAGES = (Join-Path $RepoRoot "artifacts\home\.nuget\packages")
-} else {
-    $env:NUGET_PACKAGES = (Join-Path $env:USERPROFILE ".nuget\packages")
-}
-
-$env:DOTNET_PACKAGES = $env:NUGET_PACKAGES
-$env:DNX_PACKAGES = $env:NUGET_PACKAGES
-if(!(Test-Path $env:NUGET_PACKAGES)) {
-    mkdir $env:NUGET_PACKAGES | Out-Null
-}
 
 header "Building dotnet tools version $($env:DOTNET_CLI_VERSION) - $Configuration"
 header "Checking Pre-Reqs"
@@ -40,7 +27,10 @@ if ($Offline){
 else {
     _ "$RepoRoot\scripts\obtain\install-tools.ps1"
 
-    _ "$RepoRoot\scripts\build\restore-packages.ps1" @("$NoCache")
+    # Put the stage0 on the path
+    $env:PATH = "$env:DOTNET_INSTALL_DIR\cli\bin;$env:PATH"
+
+    _ "$RepoRoot\scripts\build\restore-packages.ps1"
 }
 
 header "Compiling"
@@ -49,8 +39,8 @@ _ "$RepoRoot\scripts\compile\compile.ps1" @("$Configuration")
 header "Setting Stage2 as PATH and DOTNET_TOOLS"
 setPathAndHome "$Stage2Dir"
 
-header "Running Tests"
-_ "$RepoRoot\scripts\test\runtests.ps1"
+header "Testing"
+_ "$RepoRoot\scripts\test\test.ps1"
 
 header "Validating Dependencies"
 _ "$RepoRoot\scripts\test\validate-dependencies.ps1"

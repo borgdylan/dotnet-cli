@@ -1,37 +1,40 @@
-﻿{
+{
     "version": "1.0.0-*",
     "compilationOptions": {
         "keyFile": "../../tools/Key.snk"
     },
     "description": "Types to model a .NET Project",
     "dependencies": {
-        "NuGet.Packaging": "3.4.0-beta-*",
-        "Microsoft.Extensions.FileSystemGlobbing": "1.0.0-rc2-15964",
+        "NuGet.Packaging": "3.4.0-beta-569",
+        "Microsoft.Extensions.FileSystemGlobbing": "1.0.0-rc2-15996",
+        "System.Reflection.Metadata": "1.2.0-rc2-23728",
+        
         "Microsoft.Extensions.JsonParser.Sources": {
             "type": "build",
-            "version": "1.0.0-*"
+            "version": "1.0.0-rc2-16453"
         },
         "Microsoft.Extensions.HashCodeCombiner.Sources": {
             "type": "build",
-            "version": "1.0.0-*"
+            "version": "1.0.0-rc2-16054"
         },
         "Microsoft.Extensions.DependencyModel": {
-          "type": "build",
-          "version": "1.0.0-*"
+            "type": "build",
+            "version": "1.0.0-*"
         }
     },
 
     "frameworks": {
         "dnxcore50": {
         	"dependencies": {
-        		"NETStandard.Library": "1.0.0-rc2-23704",
+        		"NETStandard.Library": "1.0.0-rc2-23728",,
     		    "System.Threading.Thread": "4.0.0-rc2-23616",
-       			"System.Runtime.Loader": "4.0.0-rc2-23704",
-        		"System.Dynamic.Runtime": "4.0.11-rc2-23704",
-      		  	"System.Security.Cryptography.Algorithms": "4.0.0-rc2-23704",
-        		"Microsoft.CSharp": "4.0.1-rc2-23704",
-        		"System.Xml.XDocument": "4.0.11-rc2-23704",
-        	}
+       			"System.Runtime.Loader": "4.0.0-rc2-23728",
+        		"System.Dynamic.Runtime": "4.0.11-rc2-23728",
+        		"System.Security.Cryptography.Algorithms": "4.0.0-rc2-23728",
+        		"Microsoft.CSharp": "4.0.1-rc2-23728",
+        		"System.Xml.XDocument": "4.0.11-rc2-23728"
+        	},
+        	"imports": "portable-net45+win8"
         },
         "net461": {
         	"frameworkAssemblies": {

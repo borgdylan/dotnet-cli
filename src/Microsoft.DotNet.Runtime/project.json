@@ -1,8 +1,8 @@
 {
-  "version": "1.0.0-*",
-  "compilationOptions": {
-    "emitEntryPoint": true
-  },
+    "version": "1.0.0-*",
+    "compilationOptions": {
+        "emitEntryPoint": true
+    },
 
   "dependencies": {
   },
@@ -10,8 +10,9 @@
   "frameworks": {
     "dnxcore50": {
       "dependencies": {
-        "NETStandard.Library": "1.0.0-rc2-23704"
-      }
+        "NETStandard.Library" : "1.0.0-rc2-23728"
+      },
+      "imports": "portable-net45+win8"
     },
     "net461": { }
   }

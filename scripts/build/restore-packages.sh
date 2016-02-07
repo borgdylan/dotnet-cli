@@ -18,9 +18,5 @@ source "$DIR/../common/_common.sh"
 
 header "Restoring packages"
 
-$DNX_ROOT/dnu restore "$REPOROOT/src" --quiet "$NOCACHE"
-$DNX_ROOT/dnu restore "$REPOROOT/test" --quiet "$NOCACHE"
-$DNX_ROOT/dnu restore "$REPOROOT/tools" --quiet "$NOCACHE"
-set +e
-$DNX_ROOT/dnu restore "$REPOROOT/testapp" --quiet "$NOCACHE" >/dev/null 2>&1
-set -e
+dotnet restore "$REPOROOT/src" --runtime "$RID" $DISABLE_PARALLEL
+dotnet restore "$REPOROOT/tools" --runtime "$RID" $DISABLE_PARALLEL

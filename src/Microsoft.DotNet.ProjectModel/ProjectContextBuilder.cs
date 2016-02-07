@@ -154,6 +154,7 @@ namespace Microsoft.DotNet.ProjectModel
             RootDirectory = GlobalSettings?.DirectoryPath ?? RootDirectory;
             PackagesDirectory = PackagesDirectory ?? PackageDependencyProvider.ResolvePackagesPath(RootDirectory, GlobalSettings);
             ReferenceAssembliesPath = ReferenceAssembliesPath ?? FrameworkReferenceResolver.GetDefaultReferenceAssembliesPath();
+            var frameworkReferenceResolver = new FrameworkReferenceResolver(ReferenceAssembliesPath);
 
             LockFileLookup lockFileLookup = null;
 
@@ -185,12 +186,11 @@ namespace Microsoft.DotNet.ProjectModel
                 target = SelectTarget(LockFile);
                 if (target != null)
                 {
-                    var packageResolver = new PackageDependencyProvider(PackagesDirectory);
+                    var packageResolver = new PackageDependencyProvider(PackagesDirectory, frameworkReferenceResolver);
                     ScanLibraries(target, lockFileLookup, libraries, packageResolver, projectResolver);
                 }
             }
 
-            var frameworkReferenceResolver = new FrameworkReferenceResolver(ReferenceAssembliesPath);
             var referenceAssemblyDependencyResolver = new ReferenceAssemblyDependencyResolver(frameworkReferenceResolver);
             bool requiresFrameworkAssemblies;
 
@@ -267,10 +267,13 @@ namespace Microsoft.DotNet.ProjectModel
                                          ReferenceAssemblyDependencyResolver referenceAssemblyDependencyResolver,
                                          out bool requiresFrameworkAssemblies)
         {
+            // Remark: the LibraryType in the key of the given dictionary are all "Unspecified" at the beginning.
             requiresFrameworkAssemblies = false;
 
-            foreach (var library in libraries.Values.ToList())
+            foreach (var pair in libraries.ToList())
             {
+                var library = pair.Value;
+
                 if (Equals(library.Identity.Type, LibraryType.Package) &&
                     !Directory.Exists(library.Path))
                 {
@@ -278,34 +281,64 @@ namespace Microsoft.DotNet.ProjectModel
                     library.Resolved = false;
                 }
 
+                // The System.* packages provide placeholders on any non netstandard platform 
+                // To make them work seamlessly on those platforms, we fill the gap with a reference
+                // assembly (if available)
+                var package = library as PackageDescription;
+                if (package != null && package.Resolved && !package.Target.CompileTimeAssemblies.Any())
+                {
+                    var replacement = referenceAssemblyDependencyResolver.GetDescription(new LibraryRange(library.Identity.Name, LibraryType.ReferenceAssembly), TargetFramework);
+                    if (replacement?.Resolved == true)
+                    {
+                        requiresFrameworkAssemblies = true;
+
+                        // Remove the original package reference
+                        libraries.Remove(pair.Key);
+
+                        // Insert a reference assembly key if there isn't one
+                        var key = new LibraryKey(replacement.Identity.Name, LibraryType.ReferenceAssembly);
+                        if (!libraries.ContainsKey(key))
+                        {
+                            libraries[key] = replacement;
+                        }
+                    }
+                }
+            }
+
+            foreach (var pair in libraries.ToList())
+            {
+                var library = pair.Value;
                 library.Framework = library.Framework ?? TargetFramework;
                 foreach (var dependency in library.Dependencies)
                 {
-                    var keyType = dependency.Target == LibraryType.ReferenceAssembly ? LibraryType.ReferenceAssembly : LibraryType.Unspecified;
+                    var keyType = dependency.Target == LibraryType.ReferenceAssembly ?
+                                  LibraryType.ReferenceAssembly :
+                                  LibraryType.Unspecified;
+
                     var key = new LibraryKey(dependency.Name, keyType);
 
-                    LibraryDescription dep;
-                    if (!libraries.TryGetValue(key, out dep))
+                    LibraryDescription dependencyDescription;
+                    if (!libraries.TryGetValue(key, out dependencyDescription))
                     {
-                        if (Equals(LibraryType.ReferenceAssembly, dependency.Target))
+                        if (keyType == LibraryType.ReferenceAssembly)
                         {
-                            requiresFrameworkAssemblies = true;
-
-                            dep = referenceAssemblyDependencyResolver.GetDescription(dependency, TargetFramework) ??
-                                  UnresolvedDependencyProvider.GetDescription(dependency, TargetFramework);
-
-                            dep.Framework = TargetFramework;
-                            libraries[key] = dep;
+                            // a dependency is specified to be reference assembly but fail to match
+                            // then add a unresolved dependency
+                            dependencyDescription = referenceAssemblyDependencyResolver.GetDescription(dependency, TargetFramework) ??
+                                                    UnresolvedDependencyProvider.GetDescription(dependency, TargetFramework);
+                            libraries[key] = dependencyDescription;
                         }
-                        else
+                        else if (!libraries.TryGetValue(new LibraryKey(dependency.Name, LibraryType.ReferenceAssembly), out dependencyDescription))
                         {
-                            dep = UnresolvedDependencyProvider.GetDescription(dependency, TargetFramework);
-                            libraries[key] = dep;
+                            // a dependency which type is unspecified fails to match, then try to find a 
+                            // reference assembly type dependency
+                            dependencyDescription = UnresolvedDependencyProvider.GetDescription(dependency, TargetFramework);
+                            libraries[key] = dependencyDescription;
                         }
                     }
 
-                    dep.RequestedRanges.Add(dependency);
-                    dep.Parents.Add(library);
+                    dependencyDescription.RequestedRanges.Add(dependency);
+                    dependencyDescription.Parents.Add(library);
                 }
             }
         }
@@ -335,7 +368,7 @@ namespace Microsoft.DotNet.ProjectModel
 
                     if (packageEntry != null)
                     {
-                        description = packageResolver.GetDescription(packageEntry, library);
+                        description = packageResolver.GetDescription(TargetFramework, packageEntry, library);
                     }
 
                     type = LibraryType.Package;
