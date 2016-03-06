@@ -130,8 +130,11 @@ namespace Microsoft.DotNet.Cli.Utils
             #if DNXCORE50
             _process.StartInfo.Environment[name] = value;
             #else
-            _process.StartInfo.EnvironmentVariables.Add(name,value);
-            #endif
+            if (!_process.StartInfo.EnvironmentVariables.ContainsKey(name))
+	    {
+	    	_process.StartInfo.EnvironmentVariables.Add(name,value);
+            }
+	    #endif
             return this;
         }
 

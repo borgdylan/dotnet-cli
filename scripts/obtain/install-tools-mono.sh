@@ -24,8 +24,8 @@ header "Installing dotnet stage 0"
 $REPOROOT/scripts/obtain/install.sh
 
 # Put the stage0 on the PATH
-export PATH=$REPOROOT/artifacts/$RID/stage0/bin:$PATH
+#export PATH=$REPOROOT/artifacts/$RID/stage0/bin:$PATH
 
 # Download DNX to copy into stage2
-header "Downloading DNX $DNX_VERSION"
-$REPOROOT/scripts/obtain/install-dnx-mono.sh
+#header "Downloading DNX $DNX_VERSION"
+#$REPOROOT/scripts/obtain/install-dnx-mono.sh

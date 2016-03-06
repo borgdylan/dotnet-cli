@@ -72,6 +72,7 @@ namespace Microsoft.DotNet.Tools.Publish
 		
 		private static bool RIDEquals(string rid1, string rid2)
 		{
+			Console.WriteLine($"{rid1} --- {rid2}");
 			if (Regex.IsMatch(rid1, "^ubuntu(.)*$") && Regex.IsMatch(rid2, "^ubuntu(.)*$"))
 			{
 				string[] r1 = rid1.Split(new char[] {'-'});

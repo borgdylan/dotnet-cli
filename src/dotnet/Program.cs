@@ -78,7 +78,7 @@ Common Commands:
             var success = true;
             var command = string.Empty;
             var lastArg = 0;
-            for (; lastArg < args.Length; lastArg++)
+            for (lastArg = 0; lastArg < args.Length; lastArg++)
             {
                 if (IsArg(args[lastArg], "v", "verbose"))
                 {
@@ -180,9 +180,7 @@ Common Commands:
 
         private static void PrintVersionHeader()
         {
-            var versionString = string.IsNullOrEmpty(ProductVersion) ?
-                string.Empty :
-                $" ({ProductVersion})";
+            var versionString = string.IsNullOrEmpty(ProductVersion) ? string.Empty : $" ({ProductVersion})";
             Reporter.Output.WriteLine(ProductLongName + versionString);
         }
 

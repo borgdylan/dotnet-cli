@@ -19,11 +19,6 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 source "$DIR/../common/_common-mono.sh"
 source "$REPOROOT/scripts/build/generate-version.sh"
 
-## Temporarily redirect to the NuGet package installation location
-export NUGET_PACKAGES=~/.nuget/packages
-export DOTNET_PACKAGES=$NUGET_PACKAGES
-export DNX_PACKAGES=$NUGET_PACKAGES
-
 header "Building dotnet tools version $DOTNET_BUILD_VERSION - $CONFIGURATION"
 header "Checking Pre-Reqs"
 
@@ -32,10 +27,10 @@ $REPOROOT/scripts/test/check-prereqs.sh
 header "Adjusting file descriptors limit, if necessary"
 # Increases the file descriptors limit for this bash. It prevents an issue we were hitting during restore
 FILE_DESCRIPTOR_LIMIT=$( ulimit -n )
-if [ $FILE_DESCRIPTOR_LIMIT -lt 512 ]
+if [ $FILE_DESCRIPTOR_LIMIT -lt 1024 ]
 then
-    info "Increasing file description limit to 512"
-    ulimit -n 512
+    info "Increasing file description limit to 1024"
+    ulimit -n 1024
 fi
 
 header "Restoring Tools and Packages"

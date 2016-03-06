@@ -1,4 +1,0 @@
-﻿<?xml version="1.0" encoding="utf-8"?><coreProperties xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://schemas.openxmlformats.org/package/2006/metadata/core-properties"><dc:creator>F# Software Foundation</dc:creator><dc:description>FSharp.Compiler.Tools for F# 4.0
-
-      FSharp.Compiler.Tools built by F# Software Foundation
-      This package includes the F# compiler and the F# Interactive.</dc:description><dc:identifier>FSharp.Compiler.Tools</dc:identifier><version>4.0.0.1</version><keywords>F#, FSharp, FSharp.Core, fsi, fsc</keywords><dc:title>FSharp.Compiler.Tools for F# 4.0</dc:title></coreProperties>

@@ -26,7 +26,7 @@
     "frameworks": {
         "dnxcore50": {
         	"dependencies": {
-        		"NETStandard.Library": "1.0.0-rc2-23728",,
+        		"NETStandard.Library": "1.0.0-rc2-23728",
     		    "System.Threading.Thread": "4.0.0-rc2-23616",
        			"System.Runtime.Loader": "4.0.0-rc2-23728",
         		"System.Dynamic.Runtime": "4.0.11-rc2-23728",
@@ -38,7 +38,9 @@
         },
         "net461": {
         	"frameworkAssemblies": {
-        		"System.Runtime": "4.0.0.0"
+        		"System.Runtime": "4.0.0.0",
+        		"System.Collections": "4.0.0.0",
+        		"System.IO": "4.0.0.0"
         	},
         	"dependencies": {
         		"System.Runtime.InteropServices.RuntimeInformation": "4.0.0-*",

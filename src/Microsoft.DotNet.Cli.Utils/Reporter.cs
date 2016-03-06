@@ -22,10 +22,15 @@ namespace Microsoft.DotNet.Cli.Utils
         public static Reporter Output { get; } = Create(AnsiConsole.GetOutput);
         public static Reporter Error { get; } = Create(AnsiConsole.GetOutput);
         public static Reporter Verbose { get; } = CommandContext.IsVerbose() ? Create(AnsiConsole.GetOutput) : Null;
+        
+        //public static Reporter Output { get; } = Null;
+        //public static Reporter Error { get; } = Null;
+        //public static Reporter Verbose { get; } = Null;
 
         public static Reporter Create(Func<bool, AnsiConsole> getter)
         {
             return new Reporter(getter(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)));
+            //return Null;
         }
 
         public void WriteLine(string message)
@@ -35,10 +40,12 @@ namespace Microsoft.DotNet.Cli.Utils
                 if (CommandContext.ShouldPassAnsiCodesThrough())
                 {
                     _console?.Writer?.WriteLine(message);
+                    //Console.WriteLine(message);
                 }
                 else
                 {
                     _console?.WriteLine(message);
+                    //Console.WriteLine(message);
                 }
             }
         }
@@ -48,6 +55,7 @@ namespace Microsoft.DotNet.Cli.Utils
             lock (_lock)
             {
                 _console?.Writer?.WriteLine();
+                //Console.WriteLine();
             }
         }
 
@@ -56,6 +64,7 @@ namespace Microsoft.DotNet.Cli.Utils
             lock (_lock)
             {
                 _console?.Writer?.Write(message);
+                //Console.WriteLine(message);
             }
         }
     }

@@ -30,7 +30,9 @@ header "Generating Native Installer"
 $DIR/package-native.sh
 
 header "Generating version badge"
-sed "s/ver_number/$DOTNET_CLI_VERSION/g" $VERSION_BADGE > $BADGE_DESTINATION
+#echo $VERSION_BADGE
+#echo $BADGE_DESTINATION
+#sed "s/ver_number/$DOTNET_CLI_VERSION/g" $VERSION_BADGE > $BADGE_DESTINATION
 
 header "Publishing version badge"
 $REPOROOT/scripts/publish/publish.sh $BADGE_DESTINATION

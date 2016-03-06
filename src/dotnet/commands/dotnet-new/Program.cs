@@ -20,7 +20,12 @@ namespace Microsoft.DotNet.Tools.New
             }
 
             // filename.extension
-            return parts[parts.Length - 2] + "." + parts[parts.Length - 1];
+            string temp = parts[parts.Length - 2] + "." + parts[parts.Length - 1];
+            if (temp == "project.txt")
+            {
+            	return "project.json";
+            }
+            return temp;
         }
 
         public int CreateEmptyProject(string languageName, string templateDir)

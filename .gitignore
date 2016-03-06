@@ -265,6 +265,10 @@ _Pvt_Extensions
 .fake/
 
 temp/
+roslyn_bin/
+nuget_bin/
+fsharp_bin/
+runtime_sri_bin/
 
 # Exceptions
 # Build Scripts

@@ -30,11 +30,21 @@ namespace Microsoft.DotNet.Tools.Publish
             app.OnExecute(() =>
             {
                 var publish = new PublishCommand();
-
+                
                 publish.Framework = framework.Value();
                 publish.Runtime = runtime.Value();
                 publish.OutputPath = output.Value();
-                publish.Configuration = configuration.Value() ?? Constants.DefaultConfiguration;
+                
+                var cv = configuration.Value();
+                if (cv != null)
+                {
+                	publish.Configuration = cv;
+                }
+                else
+                {
+                	publish.Configuration = Constants.DefaultConfiguration;
+                }
+                
                 publish.NativeSubdirectories = nativeSubdirectories.HasValue();
 
                 publish.ProjectPath = projectPath.Value;
@@ -55,7 +65,7 @@ namespace Microsoft.DotNet.Tools.Publish
 
             try
             {
-                return app.Execute(args);
+            	return app.Execute(args);
             }
             catch (Exception ex)
             {
