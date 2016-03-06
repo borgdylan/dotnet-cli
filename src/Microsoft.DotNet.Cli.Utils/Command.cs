@@ -8,10 +8,11 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NuGet.Frameworks;
+using Microsoft.DotNet.ProjectModel;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
-    public class Command
+    public class Command : ICommand
     {
         private readonly Process _process;
         private readonly StreamForwarder _stdOut;
@@ -29,13 +30,13 @@ namespace Microsoft.DotNet.Cli.Utils
                 RedirectStandardOutput = true
             };
             
-            #if NET461
+            #if NET461 || NET451
             psi.UseShellExecute = false;
             #endif
 
             _stdOut = new StreamForwarder();
             _stdErr = new StreamForwarder();
-        
+
             _process = new Process
             {
                 StartInfo = psi
@@ -44,9 +45,16 @@ namespace Microsoft.DotNet.Cli.Utils
             ResolutionStrategy = commandSpec.ResolutionStrategy;
         }
 
-        public static Command CreateDotNet(string commandName, IEnumerable<string> args, NuGetFramework framework = null, bool useComSpec = false)
+        public static Command CreateDotNet(
+            string commandName, 
+            IEnumerable<string> args, 
+            NuGetFramework framework = null,  
+            string configuration = Constants.DefaultConfiguration)
         {
-            return Create("dotnet", new[] { commandName }.Concat(args), framework, useComSpec);
+            return Create("dotnet", 
+                new[] { commandName }.Concat(args), 
+                framework, 
+                configuration: configuration);
         }
 
         /// <summary>
@@ -59,9 +67,16 @@ namespace Microsoft.DotNet.Cli.Utils
         /// <param name="args"></param>
         /// <param name="framework"></param>
         /// <returns></returns>
-        public static Command Create(string commandName, IEnumerable<string> args, NuGetFramework framework = null, bool useComSpec = false)
+        public static Command Create(
+            string commandName, 
+            IEnumerable<string> args, 
+            NuGetFramework framework = null, 
+            string configuration = Constants.DefaultConfiguration)
         {
-            var commandSpec = CommandResolver.TryResolveCommandSpec(commandName, args, framework, useComSpec);
+            var commandSpec = CommandResolver.TryResolveCommandSpec(commandName, 
+                args, 
+                framework, 
+                configuration: configuration);
 
             if (commandSpec == null)
             {
@@ -73,6 +88,27 @@ namespace Microsoft.DotNet.Cli.Utils
             return command;
         }
         
+        public static Command CreateForScript(
+            string commandName, 
+            IEnumerable<string> args, 
+            Project project, 
+            string[] inferredExtensionList)
+        {
+            var commandSpec = CommandResolver.TryResolveScriptCommandSpec(commandName, 
+                args, 
+                project, 
+                inferredExtensionList);
+
+            if (commandSpec == null)
+            {
+                throw new CommandUnknownException(commandName);
+            }
+
+            var command = new Command(commandSpec);
+
+            return command;
+        }
+
         public CommandResult Execute()
         {
 
@@ -115,17 +151,17 @@ namespace Microsoft.DotNet.Cli.Utils
             return new CommandResult(
                 this._process.StartInfo,
                 exitCode,
-                _stdOut.GetCapturedOutput(),
-                _stdErr.GetCapturedOutput());
+                _stdOut.CapturedOutput,
+                _stdErr.CapturedOutput);
         }
 
-        public Command WorkingDirectory(string projectDirectory)
+        public ICommand WorkingDirectory(string projectDirectory)
         {
             _process.StartInfo.WorkingDirectory = projectDirectory;
             return this;
         }
 
-        public Command EnvironmentVariable(string name, string value)
+        public ICommand EnvironmentVariable(string name, string value)
         {
             #if DNXCORE50
             _process.StartInfo.Environment[name] = value;
@@ -138,71 +174,75 @@ namespace Microsoft.DotNet.Cli.Utils
             return this;
         }
 
-        public Command CaptureStdOut()
+        public ICommand CaptureStdOut()
         {
             ThrowIfRunning();
             _stdOut.Capture();
             return this;
         }
 
-        public Command CaptureStdErr()
+        public ICommand CaptureStdErr()
         {
             ThrowIfRunning();
             _stdErr.Capture();
             return this;
         }
 
-        public Command ForwardStdOut(TextWriter to = null, bool onlyIfVerbose = false)
+        public ICommand ForwardStdOut(TextWriter to = null, bool onlyIfVerbose = false, bool ansiPassThrough = true)
         {
             ThrowIfRunning();
             if (!onlyIfVerbose || CommandContext.IsVerbose())
             {
                 if (to == null)
                 {
-                    _stdOut.ForwardTo(write: Reporter.Output.Write, writeLine: Reporter.Output.WriteLine);
+                    _stdOut.ForwardTo(writeLine: Reporter.Output.WriteLine);
+                    EnvironmentVariable(CommandContext.Variables.AnsiPassThru, ansiPassThrough.ToString());
                 }
                 else
                 {
-                    _stdOut.ForwardTo(write: to.Write, writeLine: to.WriteLine);
+                    _stdOut.ForwardTo(writeLine: to.WriteLine);
                 }
             }
             return this;
         }
 
-        public Command ForwardStdErr(TextWriter to = null, bool onlyIfVerbose = false)
+        public ICommand ForwardStdErr(TextWriter to = null, bool onlyIfVerbose = false, bool ansiPassThrough = true)
         {
             ThrowIfRunning();
             if (!onlyIfVerbose || CommandContext.IsVerbose())
             {
                 if (to == null)
                 {
-                    _stdErr.ForwardTo(write: Reporter.Error.Write, writeLine: Reporter.Error.WriteLine);
+                    _stdErr.ForwardTo(writeLine: Reporter.Error.WriteLine);
+                    EnvironmentVariable(CommandContext.Variables.AnsiPassThru, ansiPassThrough.ToString());
                 }
                 else
                 {
-                    _stdErr.ForwardTo(write: to.Write, writeLine: to.WriteLine);
+                    _stdErr.ForwardTo(writeLine: to.WriteLine);
                 }
             }
             return this;
         }
 
-        public Command OnOutputLine(Action<string> handler)
+        public ICommand OnOutputLine(Action<string> handler)
         {
             ThrowIfRunning();
-            _stdOut.ForwardTo(write: null, writeLine: handler);
+            _stdOut.ForwardTo(writeLine: handler);
             return this;
         }
 
-        public Command OnErrorLine(Action<string> handler)
+        public ICommand OnErrorLine(Action<string> handler)
         {
             ThrowIfRunning();
-            _stdErr.ForwardTo(write: null, writeLine: handler);
+            _stdErr.ForwardTo(writeLine: handler);
             return this;
         }
 
         public CommandResolutionStrategy ResolutionStrategy { get; }
 
         public string CommandName => _process.StartInfo.FileName;
+
+        public string CommandArgs => _process.StartInfo.Arguments;
 
         private string FormatProcessInfo(ProcessStartInfo info)
         {

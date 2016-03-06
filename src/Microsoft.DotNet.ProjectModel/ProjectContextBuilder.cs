@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ProjectModel
 
         private Func<string, LockFile> LockFileResolver { get; set; }
 
-        private ProjectReaderSettings Settings { get; set; }
+        private ProjectReaderSettings Settings { get; set; } = ProjectReaderSettings.ReadFromEnvironment();
 
         public ProjectContextBuilder()
         {
@@ -175,7 +175,7 @@ namespace Microsoft.DotNet.ProjectModel
             var libraries = new Dictionary<LibraryKey, LibraryDescription>();
             var projectResolver = new ProjectDependencyProvider(ProjectResolver);
 
-            var mainProject = projectResolver.GetDescription(TargetFramework, Project);
+            var mainProject = projectResolver.GetDescription(TargetFramework, Project, targetLibrary: null);
 
             // Add the main project
             libraries.Add(new LibraryKey(mainProject.Identity.Name), mainProject);
@@ -285,7 +285,7 @@ namespace Microsoft.DotNet.ProjectModel
                 // To make them work seamlessly on those platforms, we fill the gap with a reference
                 // assembly (if available)
                 var package = library as PackageDescription;
-                if (package != null && package.Resolved && !package.Target.CompileTimeAssemblies.Any())
+                if (package != null && package.Resolved && !package.CompileTimeAssemblies.Any())
                 {
                     var replacement = referenceAssemblyDependencyResolver.GetDescription(new LibraryRange(library.Identity.Name, LibraryType.ReferenceAssembly), TargetFramework);
                     if (replacement?.Resolved == true)

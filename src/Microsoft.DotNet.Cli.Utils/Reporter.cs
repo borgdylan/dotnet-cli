@@ -2,14 +2,14 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-using System.Runtime.InteropServices;
+using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
     // Stupid-simple console manager
     public class Reporter
     {
-        private static readonly Reporter Null = new Reporter(console: null);
+        private static readonly Reporter NullReporter = new Reporter(console: null);
         private static object _lock = new object();
 
         private readonly AnsiConsole _console;
@@ -19,19 +19,11 @@ namespace Microsoft.DotNet.Cli.Utils
             _console = console;
         }
 
-        public static Reporter Output { get; } = Create(AnsiConsole.GetOutput);
-        public static Reporter Error { get; } = Create(AnsiConsole.GetOutput);
-        public static Reporter Verbose { get; } = CommandContext.IsVerbose() ? Create(AnsiConsole.GetOutput) : Null;
-        
-        //public static Reporter Output { get; } = Null;
-        //public static Reporter Error { get; } = Null;
-        //public static Reporter Verbose { get; } = Null;
-
-        public static Reporter Create(Func<bool, AnsiConsole> getter)
-        {
-            return new Reporter(getter(RuntimeInformation.IsOSPlatform(OSPlatform.Windows)));
-            //return Null;
-        }
+        public static Reporter Output { get; } = new Reporter(AnsiConsole.GetOutput());
+        public static Reporter Error { get; } = new Reporter(AnsiConsole.GetError());
+        public static Reporter Verbose { get; } = CommandContext.IsVerbose() ? 
+            new Reporter(AnsiConsole.GetOutput()) : 
+            NullReporter;
 
         public void WriteLine(string message)
         {
@@ -40,12 +32,10 @@ namespace Microsoft.DotNet.Cli.Utils
                 if (CommandContext.ShouldPassAnsiCodesThrough())
                 {
                     _console?.Writer?.WriteLine(message);
-                    //Console.WriteLine(message);
                 }
                 else
                 {
                     _console?.WriteLine(message);
-                    //Console.WriteLine(message);
                 }
             }
         }
@@ -55,7 +45,6 @@ namespace Microsoft.DotNet.Cli.Utils
             lock (_lock)
             {
                 _console?.Writer?.WriteLine();
-                //Console.WriteLine();
             }
         }
 
@@ -63,8 +52,14 @@ namespace Microsoft.DotNet.Cli.Utils
         {
             lock (_lock)
             {
-                _console?.Writer?.Write(message);
-                //Console.WriteLine(message);
+                if (CommandContext.ShouldPassAnsiCodesThrough())
+                {
+                    _console?.Writer?.Write(message);
+                }
+                else
+                {
+                    _console?.Write(message);
+                }
             }
         }
     }

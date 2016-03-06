@@ -9,10 +9,6 @@ using System.Linq;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.Dnx.Runtime.Common.CommandLine;
 using Microsoft.DotNet.ProjectModel;
-using Microsoft.Extensions.Testing.Abstractions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using NuGet.Frameworks;
 
 namespace Microsoft.DotNet.Tools.Test
 {
@@ -33,6 +29,7 @@ namespace Microsoft.DotNet.Tools.Test
 
             var parentProcessIdOption = app.Option("--parentProcessId", "Used by IDEs to specify their process ID. Test will exit if the parent process does.", CommandOptionType.SingleValue);
             var portOption = app.Option("--port", "Used by IDEs to specify a port number to listen for a connection.", CommandOptionType.SingleValue);
+            var configurationOption = app.Option("-c|--configuration <CONFIGURATION>", "Configuration under which to build", CommandOptionType.SingleValue);
             var projectPath = app.Argument("<PROJECT>", "The project to test, defaults to the current directory. Can be a path to a project.json or a project directory.");
 
             app.OnExecute(() =>
@@ -58,6 +55,8 @@ namespace Microsoft.DotNet.Tools.Test
 
                     var testRunner = projectContext.ProjectFile.TestRunner;
 
+                    var configuration = configurationOption.Value() ?? Constants.DefaultConfiguration;
+
                     if (portOption.HasValue())
                     {
                         int port;
@@ -67,11 +66,11 @@ namespace Microsoft.DotNet.Tools.Test
                             throw new InvalidOperationException($"{portOption.Value()} is not a valid port number.");
                         }
 
-                        return RunDesignTime(port, projectContext, testRunner);
+                        return RunDesignTime(port, projectContext, testRunner, configuration);
                     }
                     else
                     {
-                        return RunConsole(projectContext, app, testRunner);
+                        return RunConsole(projectContext, app, testRunner, configuration);
                     }
                 }
                 catch (InvalidOperationException ex)
@@ -90,166 +89,66 @@ namespace Microsoft.DotNet.Tools.Test
             return app.Execute(args);
         }
 
-        private static int RunConsole(ProjectContext projectContext, CommandLineApplication app, string testRunner)
+        private static int RunConsole(ProjectContext projectContext, CommandLineApplication app, string testRunner, string configuration)
         {
-            var commandArgs = new List<string> { projectContext.GetOutputPathCalculator().GetAssemblyPath(Constants.DefaultConfiguration) };
+            var commandArgs = new List<string> { projectContext.GetOutputPaths(configuration).CompilationFiles.Assembly };
             commandArgs.AddRange(app.RemainingArguments);
 
-            return Command.CreateDotNet($"{GetCommandName(testRunner)}", commandArgs, projectContext.TargetFramework)
+            return Command.Create($"dotnet-{GetCommandName(testRunner)}", commandArgs, projectContext.TargetFramework, configuration: configuration)
                 .ForwardStdErr()
                 .ForwardStdOut()
                 .Execute()
                 .ExitCode;
         }
 
-        private static int RunDesignTime(int port, ProjectContext projectContext, string testRunner)
+        private static int RunDesignTime(
+            int port,
+            ProjectContext
+            projectContext,
+            string testRunner,
+            string configuration)
         {
             Console.WriteLine("Listening on port {0}", port);
-            using (var channel = ReportingChannel.ListenOn(port))
-            {
-                Console.WriteLine("Client accepted {0}", channel.Socket.LocalEndPoint);
 
-                HandleDesignTimeMessages(projectContext, testRunner, channel);
+            HandleDesignTimeMessages(projectContext, testRunner, port, configuration);
 
-                return 0;
-            }
+            return 0;
         }
 
-        private static void HandleDesignTimeMessages(ProjectContext projectContext, string testRunner, ReportingChannel channel)
+        private static void HandleDesignTimeMessages(
+            ProjectContext projectContext,
+            string testRunner,
+            int port,
+            string configuration)
         {
+            var reportingChannelFactory = new ReportingChannelFactory();
+            var adapterChannel = reportingChannelFactory.CreateChannelWithPort(port);
+
             try
             {
-                var message = channel.ReadQueue.Take();
+                var assemblyUnderTest = projectContext.GetOutputPaths(configuration).CompilationFiles.Assembly;
+                var messages = new TestMessagesCollection();
+                using (var dotnetTest = new DotnetTest(messages, assemblyUnderTest))
+                {
+                    var commandFactory = new CommandFactory();
+                    var testRunnerFactory = new TestRunnerFactory(GetCommandName(testRunner), commandFactory);
 
-                if (message.MessageType == "ProtocolVersion")
-                {
-                    HandleProtocolVersionMessage(message, channel);
+                    dotnetTest
+                        .AddNonSpecificMessageHandlers(messages, adapterChannel)
+                        .AddTestDiscoveryMessageHandlers(adapterChannel, reportingChannelFactory, testRunnerFactory)
+                        .AddTestRunMessageHandlers(adapterChannel, reportingChannelFactory, testRunnerFactory)
+                        .AddTestRunnnersMessageHandlers(adapterChannel);
 
-                    // Take the next message, which should be the command to execute.
-                    message = channel.ReadQueue.Take();
-                }
+                    dotnetTest.StartListeningTo(adapterChannel);
 
-                if (message.MessageType == "TestDiscovery.Start")
-                {
-                    HandleTestDiscoveryStartMessage(testRunner, channel, projectContext);
-                }
-                else if (message.MessageType == "TestExecution.Start")
-                {
-                    HandleTestExecutionStartMessage(testRunner, message, channel, projectContext);
-                }
-                else
-                {
-                    HandleUnknownMessage(message, channel);
+                    adapterChannel.Accept();
+
+                    dotnetTest.StartHandlingMessages();
                 }
             }
             catch (Exception ex)
             {
-                channel.SendError(ex);
-            }
-        }
-
-        private static void HandleProtocolVersionMessage(Message message, ReportingChannel channel)
-        {
-            var version = message.Payload?.ToObject<ProtocolVersionMessage>().Version;
-            var supportedVersion = 1;
-            TestHostTracing.Source.TraceInformation(
-                "[ReportingChannel]: Requested Version: {0} - Using Version: {1}",
-                version,
-                supportedVersion);
-
-            channel.Send(new Message()
-            {
-                MessageType = "ProtocolVersion",
-                Payload = JToken.FromObject(new ProtocolVersionMessage()
-                {
-                    Version = supportedVersion,
-                }),
-            });
-        }
-
-        private static void HandleTestDiscoveryStartMessage(string testRunner, ReportingChannel channel, ProjectContext projectContext)
-        {
-            TestHostTracing.Source.TraceInformation("Starting Discovery");
-
-            var commandArgs = new List<string> { projectContext.GetOutputPathCalculator().GetAssemblyPath(Constants.DefaultConfiguration) };
-
-            commandArgs.AddRange(new[]
-            {
-                "--list",
-                "--designtime"
-            });
-
-            ExecuteRunnerCommand(testRunner, channel, commandArgs);
-
-            channel.Send(new Message()
-            {
-                MessageType = "TestDiscovery.Response",
-            });
-
-            TestHostTracing.Source.TraceInformation("Completed Discovery");
-        }
-
-        private static void HandleTestExecutionStartMessage(string testRunner, Message message, ReportingChannel channel, ProjectContext projectContext)
-        {
-            TestHostTracing.Source.TraceInformation("Starting Execution");
-
-            var commandArgs = new List<string> { projectContext.GetOutputPathCalculator().GetAssemblyPath(Constants.DefaultConfiguration) };
-
-            commandArgs.AddRange(new[]
-            {
-                "--designtime"
-            });
-
-            var tests = message.Payload?.ToObject<RunTestsMessage>().Tests;
-            if (tests != null)
-            {
-                foreach (var test in tests)
-                {
-                    commandArgs.Add("--test");
-                    commandArgs.Add(test);
-                }
-            }
-
-            ExecuteRunnerCommand(testRunner, channel, commandArgs);
-
-            channel.Send(new Message()
-            {
-                MessageType = "TestExecution.Response",
-            });
-
-            TestHostTracing.Source.TraceInformation("Completed Execution");
-        }
-
-        private static void HandleUnknownMessage(Message message, ReportingChannel channel)
-        {
-            var error = string.Format("Unexpected message type: '{0}'.", message.MessageType);
-
-            TestHostTracing.Source.TraceEvent(TraceEventType.Error, 0, error);
-
-            channel.SendError(error);
-
-            throw new InvalidOperationException(error);
-        }
-
-        private static void ExecuteRunnerCommand(string testRunner, ReportingChannel channel, List<string> commandArgs)
-        {
-            var result = Command.CreateDotNet(GetCommandName(testRunner), commandArgs, new NuGetFramework("DNXCore", Version.Parse("5.0")))
-                .OnOutputLine(line =>
-                {
-                    try
-                    {
-                        channel.Send(JsonConvert.DeserializeObject<Message>(line));
-                    }
-                    catch
-                    {
-                        TestHostTracing.Source.TraceInformation(line);
-                    }
-                })
-                .Execute();
-
-            if (result.ExitCode != 0)
-            {
-                channel.SendError($"{GetCommandName(testRunner)} returned '{result.ExitCode}'.");
+                adapterChannel.SendError(ex);
             }
         }
 

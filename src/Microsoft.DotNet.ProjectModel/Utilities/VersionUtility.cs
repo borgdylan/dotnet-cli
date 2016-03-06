@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ProjectModel.Utilities
             #if DNXCORE50
             return new NuGetVersion(AssemblyLoadContext.GetAssemblyName(path).Version);
             #else
-            return new NuGetVersion(Assembly.LoadFile(path).GetName().Version);
+            return new NuGetVersion(AssemblyName.GetAssemblyName(path).Version);
             #endif
         }
 

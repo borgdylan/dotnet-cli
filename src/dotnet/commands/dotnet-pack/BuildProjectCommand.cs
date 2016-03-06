@@ -12,58 +12,49 @@ namespace Microsoft.DotNet.Tools.Pack
     internal class BuildProjectCommand
     {
         private readonly Project _project;
-        private readonly ArtifactPathsCalculator _artifactPathsCalculator;
 
-        private readonly string _intermediateOutputPath;
+        private readonly string _buildBasePath;
         private readonly string _configuration;
 
-        private bool SkipBuild => _artifactPathsCalculator.CompiledArtifactsPathSet;
-        
+        private readonly string _versionSuffix;
+
         public BuildProjectCommand(
-            Project project, 
-            ArtifactPathsCalculator artifactPathsCalculator, 
-            string intermediateOutputPath, 
-            string configuration)
+            Project project,
+            string buildBasePath,
+            string configuration,
+            string versionSuffix)
         {
             _project = project;
-            _artifactPathsCalculator = artifactPathsCalculator;
-            _intermediateOutputPath = intermediateOutputPath;
+            _buildBasePath = buildBasePath;
             _configuration = configuration;
+            _versionSuffix = versionSuffix;
         }
 
         public int Execute()
         {
-            if (SkipBuild)
-            {
-                return 0;
-            }
-
             if (_project.Files.SourceFiles.Any())
             {
                 var argsBuilder = new List<string>();
                 argsBuilder.Add("--configuration");
                 argsBuilder.Add($"{_configuration}");
 
-                if (_artifactPathsCalculator.PackageOutputPathSet)
+                if (!string.IsNullOrEmpty(_versionSuffix))
                 {
-                    argsBuilder.Add("--output");
-                    argsBuilder.Add($"{_artifactPathsCalculator.PackageOutputPathParameter}");
+                    argsBuilder.Add("--version-suffix");
+                    argsBuilder.Add(_versionSuffix);
                 }
 
-                if (!string.IsNullOrEmpty(_intermediateOutputPath))
+                if (!string.IsNullOrEmpty(_buildBasePath))
                 {
-                    argsBuilder.Add("--temp-output");
-                    argsBuilder.Add($"{_intermediateOutputPath}");
+                    argsBuilder.Add("--build-base-path");
+                    argsBuilder.Add($"{_buildBasePath}");
                 }
 
                 argsBuilder.Add($"{_project.ProjectFilePath}");
 
-                var result = Command.CreateDotNet("build", argsBuilder)
-                       .ForwardStdOut()
-                       .ForwardStdErr()
-                       .Execute();
+                var result = Build.BuildCommand.Run(argsBuilder.ToArray());
 
-                return result.ExitCode;
+                return result;
             }
 
             return 0;

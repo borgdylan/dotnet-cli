@@ -141,12 +141,12 @@ namespace Microsoft.DotNet.ProjectModel
             project.ProjectUrl = rawProject.ValueAsString("projectUrl");
             project.LicenseUrl = rawProject.ValueAsString("licenseUrl");
             project.IconUrl = rawProject.ValueAsString("iconUrl");
-            project.CompilerName = rawProject.ValueAsString("compilerName");
+            project.CompilerName = rawProject.ValueAsString("compilerName") ?? "csc";
             project.TestRunner = rawProject.ValueAsString("testRunner");
 
-            project.Authors = rawProject.ValueAsStringArray("authors") ?? Array.Empty<string>();
-            project.Owners = rawProject.ValueAsStringArray("owners") ?? Array.Empty<string>();
-            project.Tags = rawProject.ValueAsStringArray("tags") ?? Array.Empty<string>();
+            project.Authors = rawProject.ValueAsStringArray("authors") ?? EmptyArray<string>.Value;
+            project.Owners = rawProject.ValueAsStringArray("owners") ?? EmptyArray<string>.Value;
+            project.Tags = rawProject.ValueAsStringArray("tags") ?? EmptyArray<string>.Value;
 
             project.Language = rawProject.ValueAsString("language");
             project.ReleaseNotes = rawProject.ValueAsString("releaseNotes");

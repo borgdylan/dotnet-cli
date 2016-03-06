@@ -5,14 +5,16 @@ using Microsoft.DotNet.Cli.Utils;
 using System;
 using System.Diagnostics;
 using System.IO;
-
+using System.Collections.Generic;
 
 namespace Microsoft.DotNet.Tools.Test.Utilities
 {
     public class TestCommand
     {
         protected string _command;
-        
+
+        public Dictionary<string, string> Environment { get; } = new Dictionary<string, string>();
+
         public TestCommand(string command)
         {
             _command = command;
@@ -24,7 +26,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             if (!Path.IsPathRooted(_command))
             {
                 _command = Env.GetCommandPath(_command) ??
-                           Env.GetCommandPathFromAppBase(AppContext.BaseDirectory, _command);
+                           Env.GetCommandPathFromRootPath(AppContext.BaseDirectory, _command);
             }
 
             Console.WriteLine($"Executing - {_command} {args}");
@@ -32,8 +34,8 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             var stdOut = new StreamForwarder();
             var stdErr = new StreamForwarder();
 
-            stdOut.ForwardTo(write: Reporter.Output.Write, writeLine: Reporter.Output.WriteLine);
-            stdErr.ForwardTo(write: Reporter.Error.Write, writeLine: Reporter.Output.WriteLine);
+            stdOut.ForwardTo(writeLine: Reporter.Output.WriteLine);
+            stdErr.ForwardTo(writeLine: Reporter.Output.WriteLine);
 
             return RunProcess(commandPath, args, stdOut, stdErr);
         }
@@ -43,7 +45,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             Console.WriteLine($"Executing (Captured Output) - {_command} {args}");
 
             var commandPath = Env.GetCommandPath(_command, ".exe", ".cmd", "") ??
-                Env.GetCommandPathFromAppBase(AppContext.BaseDirectory, _command, ".exe", ".cmd", "");
+                Env.GetCommandPathFromRootPath(AppContext.BaseDirectory, _command, ".exe", ".cmd", "");
                 
             var stdOut = new StreamForwarder();
             var stdErr = new StreamForwarder();
@@ -64,9 +66,14 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
                 RedirectStandardOutput = true
             };
 
+            foreach (var item in Environment)
+            {
+                psi.Environment[item.Key] = item.Value;
+            }
+
             var process = new Process
             {
-                StartInfo = psi
+                StartInfo = psi,
             };
 
             process.EnableRaisingEvents = true;
@@ -82,8 +89,8 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             var result = new CommandResult(
                 process.StartInfo,
                 process.ExitCode, 
-                stdOut.GetCapturedOutput(), 
-                stdErr.GetCapturedOutput());
+                stdOut.CapturedOutput, 
+                stdErr.CapturedOutput);
 
             return result;
         }

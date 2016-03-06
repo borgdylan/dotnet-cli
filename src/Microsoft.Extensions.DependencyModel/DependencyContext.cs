@@ -11,8 +11,9 @@ namespace Microsoft.Extensions.DependencyModel
     public class DependencyContext
     {
         private const string DepsResourceSufix = ".deps.json";
+        private const string DepsFileExtension = ".deps";
 
-        private static Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
+        private static readonly Lazy<DependencyContext> _defaultContext = new Lazy<DependencyContext>(LoadDefault);
 
         public DependencyContext(string target, string runtime, CompilationOptions compilationOptions, CompilationLibrary[] compileLibraries, RuntimeLibrary[] runtimeLibraries)
         {
@@ -37,23 +38,35 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static DependencyContext LoadDefault()
         {
-            var entryAssembly = (Assembly)typeof(Assembly).GetTypeInfo().GetDeclaredMethod("GetEntryAssembly").Invoke(null, null);
-            var stream = entryAssembly.GetManifestResourceStream(entryAssembly.GetName().Name + DepsResourceSufix);
-
-            if (stream == null)
-            {
-                return null;
-            }
-
-            using (stream)
-            {
-                return Load(stream);
-            }
+            var entryAssembly = Assembly.GetEntryAssembly();
+            return Load(entryAssembly);
         }
 
-        public static DependencyContext Load(Stream stream)
+        public static DependencyContext Load(Assembly assembly)
         {
-            return new DependencyContextReader().Read(stream);
+            if (assembly == null)
+            {
+                throw new ArgumentNullException(nameof(assembly));
+            }
+
+            using (var stream = assembly.GetManifestResourceStream(assembly.GetName().Name + DepsResourceSufix))
+            {
+                if (stream != null)
+                {
+                    return new DependencyContextJsonReader().Read(stream);
+                }
+            }
+
+            var depsFile = Path.ChangeExtension(assembly.Location, DepsFileExtension);
+            if (File.Exists(depsFile))
+            {
+                using (var stream = File.OpenRead(depsFile))
+                {
+                    return new DependencyContextCsvReader().Read(stream);
+                }
+            }
+
+            return null;
         }
     }
 }

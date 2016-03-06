@@ -39,6 +39,7 @@
 
     "symlinks": {
         "bin/dotnet" : "usr/bin/dotnet",
+<<<<<<< HEAD
         "bin/dotnet-build" : "usr/bin/dotnet-build",
         "bin/dotnet-compile" : "usr/bin/dotnet-compile",
         "bin/dotnet-compile-csc" : "usr/bin/dotnet-compile-csc",
@@ -57,5 +58,9 @@
         "bin/dotnet-dnx" : "usr/bin/dotnet-dnx",
         "bin/dotnet-test" : "usr/bin/dotnet-test",
         "bin/dotnet-resgen" : "usr/bin/dotnet-resgen"
+=======
+        "bin/dotnet-mcg": "usr/bin/dotnet-mcg",
+        "bin/dotnet-compile-native" : "/usr/bin/dotnet-compile-native"
+>>>>>>> e13a23b120504b87fb2ab7765511fdae38dedbd4
     }
 }

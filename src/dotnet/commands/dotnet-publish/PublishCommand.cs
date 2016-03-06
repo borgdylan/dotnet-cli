@@ -10,7 +10,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.Cli.Compiler.Common;
 using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.DotNet.Files;
 using Microsoft.DotNet.Tools.Common;
 using Microsoft.DotNet.ProjectModel.Utilities;
 
@@ -18,15 +20,18 @@ namespace Microsoft.DotNet.Tools.Publish
 {
     public partial class PublishCommand
     {
+        private const string PublishSubfolderName = "publish";
+
         public string ProjectPath { get; set; }
         public string Configuration { get; set; }
+        public string BuildBasePath { get; set; }
         public string OutputPath { get; set; }
         public string Framework { get; set; }
         public string Runtime { get; set; }
         public bool NativeSubdirectories { get; set; }
         public NuGetFramework NugetFramework { get; set; }
         public IEnumerable<ProjectContext> ProjectContexts { get; set; }
-
+        public string VersionSuffix { get; set; }
         public int NumberOfProjects { get; private set; }
         public int NumberOfPublishedProjects { get; private set; }
 
@@ -61,7 +66,7 @@ namespace Microsoft.DotNet.Tools.Publish
 
             foreach (var project in ProjectContexts)
             {
-                if (PublishProjectContext(project, OutputPath, Configuration, NativeSubdirectories))
+                if (PublishProjectContext(project, BuildBasePath, OutputPath, Configuration, NativeSubdirectories))
                 {
                     NumberOfPublishedProjects++;
                 }
@@ -69,23 +74,23 @@ namespace Microsoft.DotNet.Tools.Publish
                 NumberOfProjects++;
             }
         }
-		
-		private static bool RIDEquals(string rid1, string rid2)
-		{
-			Console.WriteLine($"{rid1} --- {rid2}");
-			if (Regex.IsMatch(rid1, "^ubuntu(.)*$") && Regex.IsMatch(rid2, "^ubuntu(.)*$"))
-			{
-				string[] r1 = rid1.Split(new char[] {'-'});
-				string[] r2 = rid2.Split(new char[] {'-'});
-				
-				return r1[1] == r2[1];
-			}
-			else
-			{
-				return string.Equals(rid1, rid2, StringComparison.OrdinalIgnoreCase);
-			}
-		}
-		
+
+        private static bool RIDEquals(string rid1, string rid2)
+        {
+            //Console.WriteLine($"{rid1} --- {rid2}");
+            if (Regex.IsMatch(rid1, "^ubuntu(.)*$") && Regex.IsMatch(rid2, "^ubuntu(.)*$"))
+            {
+                string[] r1 = rid1.Split(new char[] {'-'});
+                string[] r2 = rid2.Split(new char[] {'-'});
+
+                return r1[1] == r2[1];
+            }
+            else
+            {
+                return string.Equals(rid1, rid2, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
         /// <summary>
         /// Publish the project for given 'framework (ex - dnxcore50)' and 'runtimeID (ex - win7-x64)'
         /// </summary>
@@ -94,15 +99,16 @@ namespace Microsoft.DotNet.Tools.Publish
         /// <param name="configuration">Debug or Release</param>
         /// <param name="nativeSubdirectories"></param>
         /// <returns>Return 0 if successful else return non-zero</returns>
-        private static bool PublishProjectContext(ProjectContext context, string outputPath, string configuration, bool nativeSubdirectories)
+        private bool PublishProjectContext(ProjectContext context, string buildBasePath, string outputPath, string configuration, bool nativeSubdirectories)
         {
             Reporter.Output.WriteLine($"Publishing {context.RootProject.Identity.Name.Yellow()} for {context.TargetFramework.DotNetFrameworkName.Yellow()}/{context.RuntimeIdentifier.Yellow()}");
 
             var options = context.ProjectFile.GetCompilerOptions(context.TargetFramework, configuration);
-            
+            var outputPaths = context.GetOutputPaths(configuration, buildBasePath, outputPath);
+
             if (string.IsNullOrEmpty(outputPath))
             {
-                outputPath = context.GetOutputPathCalculator().GetOutputDirectoryPath(configuration);
+                outputPath = Path.Combine(outputPaths.RuntimeOutputPath, PublishSubfolderName);
             }
 
             var contextVariables = new Dictionary<string, string>
@@ -110,7 +116,8 @@ namespace Microsoft.DotNet.Tools.Publish
                 { "publish:ProjectPath", context.ProjectDirectory },
                 { "publish:Configuration", configuration },
                 { "publish:OutputPath", outputPath },
-                { "publish:Framework", context.TargetFramework.Framework },
+                { "publish:TargetFramework", context.TargetFramework.GetShortFolderName() },
+                { "publish:FullTargetFramework", context.TargetFramework.DotNetFrameworkName },
                 { "publish:Runtime", context.RuntimeIdentifier },
             };
 
@@ -122,21 +129,30 @@ namespace Microsoft.DotNet.Tools.Publish
             }
 
             // Compile the project (and transitively, all it's dependencies)
-            var result = Command.CreateDotNet("build",
-                new string[] {
-                    "--framework",
-                    $"{context.TargetFramework.DotNetFrameworkName}",
-                    "--runtime",
-                    context.RuntimeIdentifier,
-                    "--configuration",
-                    configuration,
-                    context.ProjectFile.ProjectDirectory
-                })
-                .ForwardStdErr()
-                .ForwardStdOut()
-                .Execute();
+            var args = new List<string>() {
+                "--framework",
+                $"{context.TargetFramework.DotNetFrameworkName}",
+                "--runtime",
+                context.RuntimeIdentifier,
+                "--configuration",
+                configuration,
+                context.ProjectFile.ProjectDirectory
+            };
 
-            if (result.ExitCode != 0)
+            if (!string.IsNullOrEmpty(VersionSuffix))
+            {
+                args.Add("--version-suffix");
+                args.Add(VersionSuffix);
+            }
+
+            if (!string.IsNullOrEmpty(buildBasePath))
+            {
+                args.Add("--build-base-path");
+                args.Add(buildBasePath);
+            }
+
+            var result = Build.BuildCommand.Run(args.ToArray());
+            if (result != 0)
             {
                 return false;
             }
@@ -150,7 +166,7 @@ namespace Microsoft.DotNet.Tools.Publish
 
                 PublishFiles(export.RuntimeAssemblies, outputPath, nativeSubdirectories: false);
                 PublishFiles(export.NativeLibraries, outputPath, nativeSubdirectories);
-                PublishFiles(export.RuntimeAssets, outputPath);
+                export.RuntimeAssets.StructuredCopyTo(outputPath, outputPaths.IntermediateOutputDirectoryPath);
 
                 if (options.PreserveCompilationContext.GetValueOrDefault())
                 {
@@ -158,7 +174,8 @@ namespace Microsoft.DotNet.Tools.Publish
                 }
             }
 
-            CopyContents(context, outputPath);
+            var contentFiles = new ContentFiles(context);
+            contentFiles.StructuredCopyTo(outputPath);
 
             // Publish a host if this is an application
             if (options.EmitEntryPoint.GetValueOrDefault())
@@ -218,6 +235,7 @@ namespace Microsoft.DotNet.Tools.Publish
 
             return 0;
         }
+
         private static void PublishFiles(IEnumerable<string> files, string outputPath)
         {
             foreach (var file in files)
@@ -237,7 +255,7 @@ namespace Microsoft.DotNet.Tools.Publish
                 {
                     Directory.CreateDirectory(destinationDirectory);
                 }
-                
+
                 File.Copy(file.ResolvedPath, Path.Combine(destinationDirectory, Path.GetFileName(file.ResolvedPath)), overwrite: true);
             }
         }

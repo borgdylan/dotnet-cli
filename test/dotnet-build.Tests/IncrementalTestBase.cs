@@ -7,32 +7,42 @@ using System.IO;
 using System.Linq;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.Tools.Test.Utilities;
-using Xunit;
 
 namespace Microsoft.DotNet.Tools.Builder.Tests
 {
     public class IncrementalTestBase : TestBase
     {
-        protected readonly TempDirectory _tempProjectRoot;
+        protected virtual string MainProject
+        {
+            get; set;
+        }
 
-        private readonly string _testProjectsRoot;
-        protected readonly string _mainProject;
-        protected readonly string _expectedOutput;
+        protected virtual string ExpectedOutput
+        {
+            get; set;
+        }
+
+        protected virtual string TestProjectRoot
+        {
+            get; set;
+        }
+
+        protected IncrementalTestBase()
+        {
+
+        }
+
 
         public IncrementalTestBase(string testProjectsRoot, string mainProject, string expectedOutput)
         {
-            _testProjectsRoot = testProjectsRoot;
-            _mainProject = mainProject;
-            _expectedOutput = expectedOutput;
-
-            var root = Temp.CreateDirectory();
-
-            _tempProjectRoot = root.CopyDirectory(testProjectsRoot);
+            MainProject = mainProject;
+            ExpectedOutput = expectedOutput;
+            TestProjectRoot = testProjectsRoot;
         }
 
         protected void TouchSourcesOfProject()
         {
-            TouchSourcesOfProject(_mainProject);
+            TouchSourcesOfProject(MainProject);
         }
 
         protected void TouchSourcesOfProject(string projectToTouch)
@@ -48,19 +58,21 @@ namespace Microsoft.DotNet.Tools.Builder.Tests
             File.SetLastWriteTimeUtc(file, DateTime.UtcNow);
         }
 
-        protected CommandResult BuildProject(bool forceIncrementalUnsafe = false, bool expectBuildFailure = false)
+        protected CommandResult BuildProject(bool noDependencies = false, bool noIncremental = false, bool expectBuildFailure = false)
         {
-            var outputDir = GetBinDirectory();
-            var intermediateOutputDir = Path.Combine(Directory.GetParent(outputDir).FullName, "obj", _mainProject);
-            var mainProjectFile = GetProjectFile(_mainProject);
+            var mainProjectFile = GetProjectFile(MainProject);
+            return BuildProject(mainProjectFile, noDependencies, noIncremental, expectBuildFailure);
+        }
 
-            var buildCommand = new BuildCommand(mainProjectFile, output: outputDir, tempOutput: intermediateOutputDir ,forceIncrementalUnsafe : forceIncrementalUnsafe);
+        protected CommandResult BuildProject(string projectFile, bool noDependencies = false, bool noIncremental = false, bool expectBuildFailure = false)
+        {
+            var buildCommand = new BuildCommand(projectFile, output: GetOutputDir(), framework: "dnxcore50", noIncremental: noIncremental, noDependencies : noDependencies);
             var result = buildCommand.ExecuteWithCapturedOutput();
 
             if (!expectBuildFailure)
             {
                 result.Should().Pass();
-                TestOutputExecutable(outputDir, buildCommand.GetOutputExecutableName(), _expectedOutput);
+                TestOutputExecutable(GetOutputExePath(), buildCommand.GetOutputExecutableName(), ExpectedOutput);
             }
             else
             {
@@ -70,24 +82,24 @@ namespace Microsoft.DotNet.Tools.Builder.Tests
             return result;
         }
 
-        protected static void AssertProjectSkipped(string skippedProject, CommandResult buildResult)
+        protected virtual string GetOutputExePath()
         {
-            Assert.Contains($"Project {skippedProject} (DNXCore,Version=v5.0) was previously compiled. Skipping compilation.", buildResult.StdOut, StringComparison.OrdinalIgnoreCase);
+            return GetBinRoot();
         }
 
-        protected static void AssertProjectCompiled(string rebuiltProject, CommandResult buildResult)
+        protected virtual string GetOutputDir()
         {
-            Assert.Contains($"Project {rebuiltProject} (DNXCore,Version=v5.0) will be compiled", buildResult.StdOut, StringComparison.OrdinalIgnoreCase);
+            return GetBinRoot();
         }
 
-        protected string GetBinDirectory()
+        protected string GetBinRoot()
         {
-            return Path.Combine(_tempProjectRoot.Path, "bin");
+            return Path.Combine(TestProjectRoot, "bin");
         }
 
         protected virtual string GetProjectDirectory(string projectName)
         {
-            return Path.Combine(_tempProjectRoot.Path);
+            return Path.Combine(TestProjectRoot);
         }
 
         protected string GetProjectFile(string projectName)
@@ -108,7 +120,7 @@ namespace Microsoft.DotNet.Tools.Builder.Tests
 
         protected string GetCompilationOutputPath()
         {
-            var executablePath = Path.Combine(GetBinDirectory(), "Debug", "dnxcore50");
+            var executablePath = Path.Combine(GetBinRoot(), "Debug", "dnxcore50");
 
             return executablePath;
         }

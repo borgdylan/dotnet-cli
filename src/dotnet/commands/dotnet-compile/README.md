@@ -7,7 +7,7 @@ dotnet-compile -- Compiles source files for a single project to a binary format 
 
 # SYNOPSIS
 dotnet compile [--native] [--output] 
-    [--temp-output] [--framework] [--configuration] 
+    [--build-base-path] [--framework] [--configuration] 
     [--output] [--arch] [--cpp] [-ilc-args] [--verbose]
 
 # DESCRIPTION
@@ -35,9 +35,9 @@ This command relies on the following artifacts: source files, project.json proje
     
     Compiles source to native machine code, for the local machine. The default is a native executable. The default executable extension is no extension and ".exe" on Windows.
 
-`-t, --temp-output <PATH>`
+`-b, --build-base-path <PATH>`
     
-    Path where to drop the temporary binaries that are produced during compile. By default, the temporary binaries are dropped in the `obj` directory in the directory where `project.json` files lives, that is, where the application lives.  
+    Path where to drop the output produced during compile. By default, the binaries are dropped in the `bin` and `obj` directory in the directory where `project.json` files lives, that is, where the application lives.  
 
 `-f, --framework <FID>`
     
@@ -74,12 +74,6 @@ This command relies on the following artifacts: source files, project.json proje
 `-h, --help`
     
     Show short help. 
-
-# ENVIRONMENT 
-
-`DOTNET_HOME`
-
-    Points to the base directory that contains the runtime and the binaries directories. The runtime will be used to run the executable file that is dropped after compiling. Not needed for native compilation.  
-    
+  
 # SEE ALSO
 dotnet-restore(1), dotnet-publish(1), dotnet(1)

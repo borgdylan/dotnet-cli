@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.DotNet.Cli.Utils;
-using Microsoft.DotNet.Cli.Compiler.Common;
 using Microsoft.Dnx.Runtime.Common.CommandLine;
 using Microsoft.Dotnet.Cli.Compiler.Common;
 using Microsoft.DotNet.ProjectModel;
@@ -20,7 +19,6 @@ namespace Microsoft.DotNet.Tools.Restore
     public partial class RestoreCommand
     {
         private static readonly string DefaultRid = PlatformServices.Default.Runtime.GetLegacyRestoreRuntimeIdentifier();
-
 
         public static int Run(string[] args)
         {
@@ -37,15 +35,6 @@ namespace Microsoft.DotNet.Tools.Restore
             // "--verbosity" switch that goes BEFORE the command
             var quiet = args.Any(s => s.Equals("--quiet", StringComparison.OrdinalIgnoreCase));
             args = args.Where(s => !s.Equals("--quiet", StringComparison.OrdinalIgnoreCase)).ToArray();
-
-            // Until NuGet/Home#1941 is fixed, if no RIDs are specified, add our own.
-            if (!args.Any(s => s.Equals("--runtime", StringComparison.OrdinalIgnoreCase)))
-            {
-                args = Enumerable.Concat(
-                    args,
-                    PlatformServices.Default.Runtime.GetOverrideRestoreRuntimeIdentifiers().SelectMany(r => new [] { "--runtime", r })
-                    ).ToArray();
-            }
 
             app.OnExecute(() =>
             {
@@ -170,17 +159,17 @@ namespace Microsoft.DotNet.Tools.Restore
 
             var depsPath = Path.Combine(
                 toolDescription.Path,
-                Path.GetDirectoryName(toolDescription.Target.RuntimeAssemblies.First().Path),
+                Path.GetDirectoryName(toolDescription.RuntimeAssemblies.First().Path),
                 toolDescription.Identity.Name + FileNameSuffixes.Deps);
 
-            var calculator = context.GetOutputPathCalculator(context.ProjectDirectory);
-            var executable = new Executable(context, calculator);
+            var calculator = context.GetOutputPaths(Constants.DefaultConfiguration, buidBasePath: null, outputPath: context.ProjectDirectory);
+            var executable = new Executable(context, calculator, context.CreateExporter(Constants.DefaultConfiguration));
 
-            executable.MakeCompilationOutputRunnable(Constants.DefaultConfiguration);
+            executable.MakeCompilationOutputRunnable();
 
             if (File.Exists(depsPath)) File.Delete(depsPath);
 
-            File.Move(Path.Combine(calculator.GetOutputDirectoryPath(Constants.DefaultConfiguration), "bin" + FileNameSuffixes.Deps), depsPath);
+            File.Move(Path.Combine(calculator.RuntimeOutputPath, "bin" + FileNameSuffixes.Deps), depsPath);
         }
 
         private static bool RestoreToolToPath(LibraryRange tooldep, IEnumerable<string> args, string tempPath, bool quiet)
@@ -204,7 +193,9 @@ namespace Microsoft.DotNet.Tools.Restore
             sb.AppendLine("    \"frameworks\": {");
             foreach (var framework in frameworks)
             {
-                sb.AppendLine($"        \"{framework}\": {{}}");
+                var importsStatement = "\"imports\": \"portable-net452+win81\"";
+                
+                sb.AppendLine($"        \"{framework}\": {{ {importsStatement} }}");
             }
             sb.AppendLine("    }");
             sb.AppendLine("}");

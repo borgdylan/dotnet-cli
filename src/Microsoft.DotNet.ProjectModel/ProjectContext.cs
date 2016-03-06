@@ -1,6 +1,7 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,7 +26,7 @@ namespace Microsoft.DotNet.ProjectModel
 
         public LockFile LockFile { get; }
 
-        public string RootDirectory => GlobalSettings.DirectoryPath;
+        public string RootDirectory => GlobalSettings?.DirectoryPath;
 
         public string ProjectDirectory => ProjectFile.ProjectDirectory;
 
@@ -51,9 +52,9 @@ namespace Microsoft.DotNet.ProjectModel
             LockFile = lockfile;
         }
 
-        public LibraryExporter CreateExporter(string configuration)
+        public LibraryExporter CreateExporter(string configuration, string buildBasePath = null)
         {
-            return new LibraryExporter(RootProject, LibraryManager, configuration);
+            return new LibraryExporter(RootProject, LibraryManager, configuration, RuntimeIdentifier, buildBasePath, RootDirectory);
         }
 
         /// <summary>
@@ -82,11 +83,22 @@ namespace Microsoft.DotNet.ProjectModel
                         .WithRuntimeIdentifiers(runtimeIdentifiers)
                         .Build();
         }
-
+        
+        public static ProjectContextBuilder CreateBuilder(string projectPath, NuGetFramework framework)
+        {
+            if (projectPath.EndsWith(Project.FileName))
+            {
+                projectPath = Path.GetDirectoryName(projectPath);
+            }
+            return new ProjectContextBuilder()
+                        .WithProjectDirectory(projectPath)
+                        .WithTargetFramework(framework);
+        }
+        
         /// <summary>
         /// Creates a project context for each framework located in the project at <paramref name="projectPath"/>
         /// </summary>
-        public static IEnumerable<ProjectContext> CreateContextForEachFramework(string projectPath, ProjectReaderSettings settings = null)
+        public static IEnumerable<ProjectContext> CreateContextForEachFramework(string projectPath, ProjectReaderSettings settings = null, IEnumerable<string> runtimeIdentifiers = null)
         {
             if (!projectPath.EndsWith(Project.FileName))
             {
@@ -100,6 +112,7 @@ namespace Microsoft.DotNet.ProjectModel
                                 .WithProject(project)
                                 .WithTargetFramework(framework.FrameworkName)
                                 .WithReaderSettings(settings)
+                                .WithRuntimeIdentifiers(runtimeIdentifiers ?? Enumerable.Empty<string>())
                                 .Build();
             }
         }
@@ -120,9 +133,38 @@ namespace Microsoft.DotNet.ProjectModel
                         .BuildAllTargets();
         }
 
-        public OutputPathCalculator GetOutputPathCalculator(string baseOutputPath = null)
+
+        /// <summary>
+        /// Creates a project context based on existing context but using runtime target
+        /// </summary>
+        /// <param name="context"></param>
+        /// <param name="runtimeIdentifiers"></param>
+        /// <returns></returns>
+
+        public ProjectContext CreateRuntimeContext(IEnumerable<string> runtimeIdentifiers)
         {
-            return new OutputPathCalculator(ProjectFile, TargetFramework, RuntimeIdentifier, baseOutputPath);
+            var context = Create(ProjectFile.ProjectFilePath, TargetFramework, runtimeIdentifiers);
+            if (context.RuntimeIdentifier == null)
+            {
+                var rids = string.Join(", ", runtimeIdentifiers);
+                throw new InvalidOperationException($"Can not find runtime target for framework '{TargetFramework}' and RID's '{rids}'. " +
+                                                    "Possible causes:" + Environment.NewLine +
+                                                    "1. Project is not restored or restore failed - run `dotnet restore`" + Environment.NewLine +
+                                                    "2. Project is not targeting `runable` framework (`netstandardapp*` or `net*`)"
+                                                    );
+            }
+            return context;
+        }
+
+        public OutputPaths GetOutputPaths(string configuration, string buidBasePath = null, string outputPath = null)
+        {
+            return OutputPathsCalculator.GetOutputPaths(ProjectFile,
+                TargetFramework,
+                RuntimeIdentifier,
+                configuration,
+                RootDirectory,
+                buidBasePath,
+                outputPath);
         }
     }
 }

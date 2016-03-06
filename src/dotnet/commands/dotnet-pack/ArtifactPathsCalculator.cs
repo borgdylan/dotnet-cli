@@ -36,7 +36,8 @@ namespace Microsoft.DotNet.Tools.Pack
 
                 var outputPath = Path.Combine(
                     _project.ProjectDirectory,
-                    Constants.BinDirectoryName);
+                    Constants.BinDirectoryName,
+                    _configuration);
 
                 return outputPath;
             }
@@ -56,10 +57,13 @@ namespace Microsoft.DotNet.Tools.Pack
 
         public string InputPathForContext(ProjectContext context)
         {
-            return Path.Combine(
-                CompiledArtifactsPath,
+            return OutputPathsCalculator.GetOutputPaths(context.ProjectFile,
+                context.TargetFramework,
+                context.RuntimeIdentifier,
                 _configuration,
-                context.TargetFramework.GetTwoDigitShortFolderName());
-        }        
+                context.RootDirectory,
+                CompiledArtifactsPathParameter,
+                null).CompilationOutputPath;
+        }
     }
 }

@@ -1,0 +1,19 @@
+{
+    "version": "1.0.0-*",
+    "compilationOptions": {
+        "emitEntryPoint": true
+    },
+   "dependencies": {
+    },
+
+  "frameworks": {
+    "dnxcore50": {
+      "dependencies": {
+        "NETStandard.Library" : "1.0.0-rc2-23811"
+      },
+      "imports": "portable-net45+win8"
+    },
+    "net461": { }
+  },
+  "content": ["reflector_cmd.cmd"]
+}
