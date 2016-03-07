@@ -61,7 +61,7 @@ done
 #cp $OUTPUT_DIR/bin/Debug/net461/* $OUTPUT_DIR/bin
 
 # Bring in the runtime
-dotnet publish --framework "$TFM" --output "$RUNTIME_OUTPUT_DIR" --configuration "$CONFIGURATION" "$REPOROOT/src/Microsoft.DotNet.Runtime"
+#dotnet publish --framework "$TFM" --output "$RUNTIME_OUTPUT_DIR" --configuration "$CONFIGURATION" "$REPOROOT/src/Microsoft.DotNet.Runtime"
 
 # Clean up bogus additional files
 for file in ${FILES_TO_CLEAN[@]}
@@ -70,7 +70,7 @@ do
 done
 
 # Copy the runtime app-local for the tools
-cp -R $RUNTIME_OUTPUT_DIR/* $OUTPUT_DIR/bin
+#cp -R $RUNTIME_OUTPUT_DIR/* $OUTPUT_DIR/bin
 
 # Deploy CLR host to the output
 if [[ "$OSNAME" == "osx" ]]; then

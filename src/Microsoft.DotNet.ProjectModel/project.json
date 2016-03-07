@@ -51,8 +51,7 @@
                 "System.IO": "4.0.0.0"
             },
             "dependencies": {
-                "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-*",
-                "runtime.linux.System.Runtime.InteropServices.RuntimeInformation": "4.0.0-*"
+                "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-*"
             }
         }
     }

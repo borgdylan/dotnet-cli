@@ -13,7 +13,6 @@ COMMONDIR="$( cd -P "$( dirname "$COMMONSOURCE" )" && pwd )"
 
 source "$COMMONDIR/_prettyprint.sh"
 
-<<<<<<< HEAD
 # TODO: Replace this with a dotnet generation
 export TFM=dnxcore50
 export REPOROOT=$(cd $COMMONDIR/../.. && pwd)
@@ -27,9 +26,7 @@ export TEST_BIN_ROOT="$REPOROOT/artifacts/tests"
 export TEST_PACKAGE_DIR="$TEST_BIN_ROOT/packages"
 
 export RELEASE_SUFFIX=dev
-=======
 # Other variables are set by the outer build script
->>>>>>> e13a23b120504b87fb2ab7765511fdae38dedbd4
 export CHANNEL=$RELEASE_SUFFIX
 
 [ -z "$DOTNET_INSTALL_DIR" ] && export DOTNET_INSTALL_DIR=$REPOROOT/.dotnet_stage0/$RID

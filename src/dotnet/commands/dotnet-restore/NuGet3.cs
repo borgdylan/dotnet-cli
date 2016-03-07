@@ -4,7 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.DotNet.Cli.Utils;
+#if DNXCORE50
 using NugetProgram = NuGet.CommandLine.XPlat.Program;
+#endif
 
 namespace Microsoft.DotNet.Tools.Restore
 {
@@ -34,7 +36,7 @@ namespace Microsoft.DotNet.Tools.Restore
             var mainMethod = nugetAsm.EntryPoint;
             return (int)mainMethod.Invoke(null, new object[] { nugetArgs });
             #else
-            return Command.Create("dotnet-nuget", nugetArgs);
+            return Command.Create("dotnet-nuget", nugetArgs).ForwardStdErr().ForwardStdOut().Execute().ExitCode;
             #endif
         }
     }

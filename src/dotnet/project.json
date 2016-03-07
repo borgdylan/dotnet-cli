@@ -35,7 +35,7 @@
         "Microsoft.Dnx.Runtime.Sources": {
             "version": "1.0.0-rc2-16453",
             "type": "build"
-        },
+        }
     },
     "frameworks": {
         "dnxcore50": {
@@ -71,7 +71,7 @@
                     "type": "build",
                     "version": "1.0.0-rc2-16441"
                 },
-                "NuGet.Commands": "3.4.0-beta-569",
+                "NuGet.Commands": "3.4.0-beta-632",
                 "System.Runtime.Serialization.Primitives": "4.0.0",
                 "Microsoft.NETCore.Platforms": "1.0.1-beta-23728",
                 "Microsoft.Net.Compilers": "1.2.0-beta1-20160108-01",
