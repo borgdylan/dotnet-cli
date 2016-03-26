@@ -1,4 +1,4 @@
-c83f578d5caa5dc779a850cf3f19c1c5  usr/share/doc/dotnet-nightly/changelog.Debian.gz
+0add967f3cfd816b57842f5559381319  usr/share/doc/dotnet-nightly/changelog.Debian.gz
 f8b4fe6b6e3611616cadf3612c22d3ed  usr/share/doc/dotnet-nightly/copyright
 767cdd7de10df0ae959b1e70923ae47f  usr/share/dotnet-nightly/bin/FSharp.Build.dll
 8ca8bf8dd0ce05f2bd30b54b3ded5d91  usr/share/dotnet-nightly/bin/FSharp.Build.xml
@@ -95,9 +95,9 @@ f5786abdb876d2ed2afda6804e4286d9  usr/share/dotnet-nightly/bin/VBCSCompiler.exe.
 5eafa32752519d613b2f1d8499553c62  usr/share/dotnet-nightly/bin/csi.rsp
 c362ad33aaf0aec06fb0c6622fe72aa9  usr/share/dotnet-nightly/bin/dotnet
 c0a627b1cc6ba0647f4bb2373a3b6391  usr/share/dotnet-nightly/bin/dotnet-nuget
-cba924102526170454f2f012d932a991  usr/share/dotnet-nightly/bin/dotnet.exe
+9a3e4155a7fb91a03479d736f8b87732  usr/share/dotnet-nightly/bin/dotnet.exe
 87f51752fe09ee4634be367dd321f6b9  usr/share/dotnet-nightly/bin/dotnet.exe.config
-bd236649720119b8309c6e2c8ce65b35  usr/share/dotnet-nightly/bin/dotnet.pdb
+a568e5d7ea956030756d950f8e74fd7e  usr/share/dotnet-nightly/bin/dotnet.pdb
 467ea17869b872fff9871b5ed42992ea  usr/share/dotnet-nightly/bin/fsc
 bf2df67172afdedd3ca2aff9cce94103  usr/share/dotnet-nightly/bin/fsc.exe
 084e422d81ac515412a939715c7c62ad  usr/share/dotnet-nightly/bin/fsc.exe.config

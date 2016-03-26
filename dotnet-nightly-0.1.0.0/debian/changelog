@@ -2,4 +2,4 @@ dotnet-nightly (0.1.0.0-1) unstable; urgency=low
 
   * Bootstrap loop package
 
- -- Microsoft <dotnetcore@microsoft.com>  Tue, 15 Mar 2016 21:04:44 +0000
+ -- Microsoft <dotnetcore@microsoft.com>  Sat, 26 Mar 2016 10:13:59 +0000

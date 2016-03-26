@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ProjectModel.Loader
             foreach (var export in exporter.GetAllExports())
             {
                 // TODO: Handle resource assemblies
-                foreach (var asset in export.RuntimeAssemblies)
+                foreach (var asset in export.RuntimeAssemblyGroups.GetDefaultAssets())
                 {
                     // REVIEW: Should we use the following?
                     // AssemblyLoadContext.GetAssemblyName(asset.ResolvedPath);
@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ProjectModel.Loader
                     assemblies[assemblyName] = asset.ResolvedPath;
                 }
 
-                foreach (var asset in export.NativeLibraries)
+                foreach (var asset in export.NativeLibraryGroups.GetDefaultAssets())
                 {
                     dllImports[asset.Name] = asset.ResolvedPath;
                 }
