@@ -9,13 +9,19 @@
         "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-16537"
     },
     "frameworks": {
-        "net451": {},
-        "dnxcore50": {
-        	"dependencies": {
-        		"NETStandard.Library": "1.0.0-rc2-23811"
-        	},
-        	"imports": "portable-net45+win8"
+        "net451": {
+            "frameworkAssemblies": {
+                "System.Runtime": {
+                    "type": "build"
+                }
+            }
         },
-        "net461": { }
+        "netstandard1.3": {
+            "imports": "dnxcore50",
+            "dependencies": {
+                "NETStandard.Library": "1.0.0-rc2-23901",
+                "System.Diagnostics.Process": "4.1.0-rc2-23901"
+            }
+        }
     }
 }

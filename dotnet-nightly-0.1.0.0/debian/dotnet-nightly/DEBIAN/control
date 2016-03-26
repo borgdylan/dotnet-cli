@@ -1,0 +1,16 @@
+Package: dotnet-nightly
+Version: 0.1.0.0-1
+Architecture: amd64
+Maintainer: Microsoft <dotnetcore@microsoft.com>
+Installed-Size: 36700
+Depends: libc6 (>= 2.3), libgcc1 (>= 1:4.1.1), libstdc++6 (>= 5.2), libssl1.0.0, clang-3.5, libcurl3
+Conflicts: dotnet
+Section: devel
+Priority: standard
+Homepage: https://dotnet.github.io/core
+Description: Unstable Developer Build of .NET Core & command line tools
+ Unstable Developer Build of .NET Core is a cross-platform implementation of .NET Framework, a modern, modular platform
+ for building diverse kinds of applications, from command-line applications to microservices and
+ modern websites.
+ This package contains the tools you will need to start writing applications for .NET Core. It includes
+ compilers, package managers and other utilities that developers need.

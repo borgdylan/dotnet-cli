@@ -28,7 +28,7 @@
     },
 
     "debian_dependencies":{
-        "libssl-dev" : {},
+        "libssl1.0.0" : {},
         "clang-3.5" : {},
         "libcurl3" : {}
     },
@@ -39,28 +39,6 @@
 
     "symlinks": {
         "bin/dotnet" : "usr/bin/dotnet",
-<<<<<<< HEAD
-        "bin/dotnet-build" : "usr/bin/dotnet-build",
-        "bin/dotnet-compile" : "usr/bin/dotnet-compile",
-        "bin/dotnet-compile-csc" : "usr/bin/dotnet-compile-csc",
-        "bin/dotnet-compile-fsc" : "usr/bin/dotnet-compile-fsc",
-        "bin/dotnet-compile-native" : "/usr/bin/dotnet-compile-native",
-<<<<<<< HEAD:packaging/debian/debian_config.json
-        "bin/dotnet-new":"usr/bin/dotnet-new",
-=======
-        "bin/dotnet-mcg": "usr/bin/dotnet-mcg",
-        "bin/dotnet-new": "usr/bin/dotnet-new",
->>>>>>> 93a5d0026305becd893c68a5412eba31a4408f19:packaging/debian/dotnet-debian_config.json
-        "bin/dotnet-publish" : "usr/bin/dotnet-publish",
-        "bin/dotnet-repl" : "usr/bin/dotnet-repl",
-        "bin/dotnet-repl-csi" : "usr/bin/dotnet-repl-csi",
-        "bin/dotnet-restore" : "usr/bin/dotnet-restore",
-        "bin/dotnet-dnx" : "usr/bin/dotnet-dnx",
-        "bin/dotnet-test" : "usr/bin/dotnet-test",
-        "bin/dotnet-resgen" : "usr/bin/dotnet-resgen"
-=======
-        "bin/dotnet-mcg": "usr/bin/dotnet-mcg",
         "bin/dotnet-compile-native" : "/usr/bin/dotnet-compile-native"
->>>>>>> e13a23b120504b87fb2ab7765511fdae38dedbd4
     }
 }

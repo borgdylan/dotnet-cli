@@ -7,11 +7,11 @@
     },
 
   "frameworks": {
-    "dnxcore50": {
+    "netstandardapp1.5": {
       "dependencies": {
-        "NETStandard.Library" : "1.0.0-rc2-23811"
+        "NETStandard.Library" : "1.0.0-rc2-23901"
       },
-      "imports": "portable-net45+win8"
+      "imports": "dnxcore50"
     },
     "net461": { }
   },

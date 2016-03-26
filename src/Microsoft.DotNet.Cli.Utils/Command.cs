@@ -71,12 +71,14 @@ namespace Microsoft.DotNet.Cli.Utils
             string commandName, 
             IEnumerable<string> args, 
             NuGetFramework framework = null, 
-            string configuration = Constants.DefaultConfiguration)
+            string configuration = Constants.DefaultConfiguration,
+            string outputPath = null)
         {
             var commandSpec = CommandResolver.TryResolveCommandSpec(commandName, 
                 args, 
                 framework, 
-                configuration: configuration);
+                configuration: configuration,
+                outputPath: outputPath);
 
             if (commandSpec == null)
             {
@@ -86,6 +88,11 @@ namespace Microsoft.DotNet.Cli.Utils
             var command = new Command(commandSpec);
 
             return command;
+        }
+
+        public static Command Create(CommandSpec commandSpec)
+        {
+            return new Command(commandSpec);
         }
         
         public static Command CreateForScript(

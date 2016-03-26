@@ -7,13 +7,14 @@
         "Microsoft.DotNet.ProjectModel": "1.0.0-*"
     },
     "frameworks": {
-        "dnxcore50": {
-      		"dependencies": {
-        		"NETStandard.Library": "1.0.0-rc2-23811",
-        		"System.Runtime.Loader": "4.0.0-rc2-23811"
-      		},
-      		"imports": "portable-net45+win8"
-    	},
-    	"net461": { }
+        "netstandard1.3": {
+            "dependencies": {
+                "NETStandard.Library": "1.0.0-rc2-23901",
+                "Microsoft.DotNet.ProjectModel": "1.0.0-*",
+                "System.Runtime.Loader": "4.0.0-rc2-23901"
+            },
+            "imports": "dnxcore50"
+        },
+        "net461": {}
     }
 }
