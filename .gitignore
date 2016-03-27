@@ -284,3 +284,5 @@ test/PackagedCommands/Consumers/*/project.json
 
 # VS generated files
 launchSettings.json
+
+CMakeFiles

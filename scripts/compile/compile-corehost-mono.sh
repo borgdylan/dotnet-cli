@@ -18,18 +18,18 @@ source "$DIR/../common/_clang.sh"
 header "Building corehost"
 
 pushd "$REPOROOT/src/corehost" 2>&1 >/dev/null
-[ -d "cmake/$RID" ] || mkdir -p "cmake/$RID"
-cd "cmake/$RID"
-cmake ../.. -G "Unix Makefiles" -DCMAKE_BUILD_TYPE:STRING=$CONFIGURATION
-make
+./build.sh --arch amd64 --rid ubuntu.14.04-x64
 
 # Publish to artifacts
 [ -d "$HOST_DIR" ] || mkdir -p $HOST_DIR
 if [[ "$OSNAME" == "osx" ]]; then
    COREHOST_LIBNAME=libhostpolicy.dylib
+   HOSTFXR_LIBNAME=libhostfxr.dylib
 else
    COREHOST_LIBNAME=libhostpolicy.so
+   HOSTFXR_LIBNAME=libhostfxr.so
 fi
-cp "$REPOROOT/src/corehost/cmake/$RID/cli/corehost" $HOST_DIR
-cp "$REPOROOT/src/corehost/cmake/$RID/cli/dll/${COREHOST_LIBNAME}" $HOST_DIR
+cp "$REPOROOT/src/corehost/cli/corehost" $HOST_DIR
+cp "$REPOROOT/src/corehost/cli/dll/${COREHOST_LIBNAME}" $HOST_DIR
+cp "$REPOROOT/src/corehost/cli/fxr/${HOSTFXR_LIBNAME}" $HOST_DIR
 popd 2>&1 >/dev/null

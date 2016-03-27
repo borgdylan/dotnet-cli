@@ -1,3 +1,0 @@
-shlibs:Depends=libc6 (>= 2.3), libgcc1 (>= 1:4.1.1), libstdc++6 (>= 5.2)
-misc:Depends=
-misc:Pre-Depends=

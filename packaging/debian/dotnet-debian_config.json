@@ -19,7 +19,7 @@
     "control": {                                               
         "priority":"standard",                                  
         "section":"devel",                                      
-        "architecture":"any"                                    
+        "architecture":"all"                                    
     },
 
     "copyright": "2015 Microsoft",                              
@@ -34,6 +34,7 @@
     },
 
     "symlinks": {
-        "bin/dotnet-compile-native" : "/usr/bin/dotnet-compile-native"
+        "bin/dotnet-compile-native" : "/usr/bin/dotnet-compile-native",
+        "bin/dotnet" : "/usr/bin/dotnet"
     }
 }

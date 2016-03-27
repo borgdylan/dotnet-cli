@@ -170,7 +170,7 @@ namespace Microsoft.DotNet.Cli.Utils
 
         public ICommand EnvironmentVariable(string name, string value)
         {
-            #if DNXCORE50
+            #if NETSTANDARD1_5
             _process.StartInfo.Environment[name] = value;
             #else
             if (!_process.StartInfo.EnvironmentVariables.ContainsKey(name))

@@ -75,11 +75,14 @@ done
 # Deploy CLR host to the output
 if [[ "$OSNAME" == "osx" ]]; then
    COREHOST_LIBNAME=libhostpolicy.dylib
+   HOSTFXR_LIBNAME=libhostfxr.dylib
 else
    COREHOST_LIBNAME=libhostpolicy.so
+   HOSTFXR_LIBNAME=libhostfxr.so
 fi
 cp "$HOST_DIR/corehost" "$OUTPUT_DIR/bin"
 cp "$HOST_DIR/${COREHOST_LIBNAME}" "$OUTPUT_DIR/bin"
+cp "$HOST_DIR/${HOSTFXR_LIBNAME}" "$OUTPUT_DIR/bin"
 
 # install mono hosting scripts to output dir
 cp $REPOROOT/scripts/mono-hosts/* $OUTPUT_DIR/bin
@@ -107,10 +110,10 @@ unzip -qq $REPOROOT/fsharp.nupkg -d $REPOROOT/fsharp_bin
 cp $REPOROOT/fsharp_bin/tools/* $OUTPUT_DIR/bin
 
 # install NuGet
-header "Installing NuGet"
-rm -rf $REPOROOT/nuget_bin
-unzip -qq $REPOROOT/nuget.nupkg -d $REPOROOT/nuget_bin
-cp $REPOROOT/nuget_bin/lib/dnx451/* $OUTPUT_DIR/bin
+#header "Installing NuGet"
+#rm -rf $REPOROOT/nuget_bin
+#unzip -qq $REPOROOT/nuget.nupkg -d $REPOROOT/nuget_bin
+#cp $REPOROOT/nuget_bin/lib/dnx451/* $OUTPUT_DIR/bin
 
 # install runtime.linux.SRI
 header "Installing Linux version of System.Runtime.InteropServices.RuntimeInformation"

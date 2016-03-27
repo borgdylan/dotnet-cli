@@ -374,8 +374,16 @@ namespace Microsoft.DotNet.ProjectModel
                 }
 
                 description = description ?? UnresolvedDependencyProvider.GetDescription(new LibraryRange(library.Name, type), target.TargetFramework);
-
-                libraries.Add(new LibraryKey(library.Name), description);
+                var lKey = new LibraryKey(library.Name);
+                
+                if (!libraries.ContainsKey(lKey))
+                {
+                    libraries.Add(lKey, description);
+                }
+                else
+                {
+                    Console.WriteLine($"Dupe: {library.Name}");
+                }
             }
         }
 

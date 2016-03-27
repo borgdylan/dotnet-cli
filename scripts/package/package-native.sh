@@ -18,7 +18,7 @@ source "$DIR/../common/_common.sh"
 
 if [[ "$OSNAME" == "ubuntu" ]]; then
     # Create Debian package
-    $REPOROOT/scripts/package/package-debian.sh -v "0.1.0.0" -i "$STAGE2_DIR" -o "dotnet-nightly" -p "dotnet-nightly" -m "$REPOROOT/Documentation/manpages" --previous-version-url "https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-ubuntu-x64.latest.deb"
+    $REPOROOT/scripts/package/package-debian.sh -v "0.1.0.0" -i "$STAGE2_DIR" -o "dotnet-nightly" -p "dotnet-nightly" -m "$REPOROOT/Documentation/manpages" --previous-version-url "https://dotnetcli.blob.core.windows.net/dotnet/dev/Installers/Latest/dotnet-ubuntu-x64.latest.deb" --framework-nuget-name "Microsoft.NETCore.App" --framework-nuget-version "1.0.0-rc2-23925" --obj-root "$STAGE2_DIR/.."
 elif [[ "$OSNAME" == "osx" ]]; then
     # Create OSX PKG
     $REPOROOT/packaging/osx/package-osx.sh

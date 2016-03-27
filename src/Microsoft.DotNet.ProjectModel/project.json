@@ -7,7 +7,7 @@
     "dependencies": {
         "System.Reflection.Metadata": "1.3.0-rc2-23925",
         "NuGet.Packaging": "3.5.0-beta-1083",
-        "Microsoft.Extensions.FileSystemGlobbing": "1.0.0-rc2-15996",
+        "NuGet.Commands": "3.5.0-beta-1083",
         "Microsoft.Extensions.JsonParser.Sources": {
             "type": "build",
             "version": "1.0.0-rc2-16453"
@@ -46,12 +46,10 @@
         },
         "net461": {
             "frameworkAssemblies": {
-                "System.Runtime": "4.0.0.0",
                 "System.Collections": "4.0.0.0",
                 "System.IO": "4.0.0.0"
             },
             "dependencies": {
-                "System.Runtime.InteropServices.RuntimeInformation": "4.0.0-*"
             }
         }
     }

@@ -2,7 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
-#if DNXCORE50
+#if NETSTANDARD1_5
 using System.Runtime.Loader;
 #else
 using System.Reflection;
@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ProjectModel.Utilities
 
         internal static NuGetVersion GetAssemblyVersion(string path)
         {
-            #if DNXCORE50
+            #if NETSTANDARD1_5
             return new NuGetVersion(AssemblyLoadContext.GetAssemblyName(path).Version);
             #else
             return new NuGetVersion(AssemblyName.GetAssemblyName(path).Version);

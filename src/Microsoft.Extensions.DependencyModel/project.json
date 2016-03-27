@@ -1,26 +1,15 @@
 {
-  "description": "Abstractions for reading `.deps` files.",
-  "version": "1.0.0-*",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/dotnet/cli"
-  },
-  "compilationOptions": {
-    "warningsAsErrors": true,
-    "keyFile": "../../tools/Key.snk"
-  },
-  "dependencies": {
-    "Microsoft.Extensions.HashCodeCombiner.Sources": {
-      "type": "build",
-      "version": "1.0.0-rc2-16054"
+    "description": "Abstractions for reading `.deps` files.",
+    "version": "1.0.0-*",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/dotnet/cli"
     },
-    "Microsoft.DotNet.InternalAbstractions": {
-      "target": "project",
-      "version": "1.0.0-*"
+    "compilationOptions": {
+        "warningsAsErrors": true,
+        "keyFile": "../../tools/Key.snk"
     },
     "dependencies": {
-        "Newtonsoft.Json": "7.0.1",
-        "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-16537",
         "Microsoft.Extensions.HashCodeCombiner.Sources": {
             "type": "build",
             "version": "1.0.0-rc2-16054"
@@ -28,7 +17,9 @@
         "Microsoft.DotNet.InternalAbstractions": {
             "target": "project",
             "version": "1.0.0-*"
-        }
+        },
+        "Newtonsoft.Json": "7.0.1",
+        "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-20100"
     },
     "frameworks": {
         "net451": {},
@@ -38,7 +29,7 @@
                 "NETStandard.Library": "1.5.0-rc2-23925",
                 "System.Dynamic.Runtime": "4.0.11-rc2-23925"
             }
-        },
+        }
     },
     "scripts": {}
 }

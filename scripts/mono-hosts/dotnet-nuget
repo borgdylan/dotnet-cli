@@ -10,4 +10,4 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 [ -z "$MONO_THREADS_PER_CPU" ] && export MONO_THREADS_PER_CPU=20
 
-exec mono "$DIR/NuGet.CommandLine.XPlat.dll" "$@"
+exec mono "$DIR/NuGet.CommandLine.XPlat.exe" "$@"
