@@ -243,6 +243,11 @@ namespace Microsoft.DotNet.ProjectModel.Compilation
                 // Project specifies a pre-compiled binary. We're done!
                 var assemblyPath = ResolvePath(project.Project, _configuration, project.TargetFrameworkInfo.AssemblyPath);
                 var pdbPath = Path.ChangeExtension(assemblyPath, "pdb");
+                
+                if (!File.Exists(pdbPath))
+                {
+                    pdbPath = assemblyPath + ".mdb";
+                }
 
                 var compileAsset = new LibraryAsset(
                     project.Project.Name,

@@ -73,6 +73,12 @@ namespace Microsoft.DotNet.ProjectModel
         {
             yield return Assembly;
             yield return PdbPath;
+            
+            if (!File.Exists(PdbPath))
+            {
+                yield return Assembly + ".mdb";
+            }
+            
             var compilationOptions = Project.GetCompilerOptions(Framework, Configuration);
             if (compilationOptions.GenerateXmlDocumentation == true)
             {

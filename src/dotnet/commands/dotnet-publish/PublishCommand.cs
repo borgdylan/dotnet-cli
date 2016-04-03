@@ -77,7 +77,11 @@ namespace Microsoft.DotNet.Tools.Publish
 
         private static bool RIDEquals(string rid1, string rid2)
         {
-            //Console.WriteLine($"{rid1} --- {rid2}");
+            if (rid1 == null || rid2 == null)
+            {
+                return false;
+            }
+            
             if (Regex.IsMatch(rid1, "^ubuntu(.)*$") && Regex.IsMatch(rid2, "^ubuntu(.)*$"))
             {
                 string[] r1 = rid1.Split(new char[] {'-'});
@@ -340,7 +344,7 @@ namespace Microsoft.DotNet.Tools.Publish
             {
                 return frameworks.SelectMany(f => allContexts.Where(c =>
                     Equals(c.TargetFramework, f) &&
-                    string.Equals(c.RuntimeIdentifier, runtime, StringComparison.Ordinal)));
+                    string.Equals(c.RuntimeIdentifier, runtime, StringComparison.OrdinalIgnoreCase)));
             }
         }
 

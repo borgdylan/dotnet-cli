@@ -35,6 +35,20 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
                 var targetName = ResolveTargetName(destinationPath, asset);
                 var transformedFile = asset.GetTransformedFile(tempLocation);
 
+                if (!File.Exists(transformedFile) && transformedFile.EndsWith(".pdb"))
+                {
+                    if (File.Exists(Path.ChangeExtension(transformedFile, ".exe.mdb")))
+                    {
+                        transformedFile = Path.ChangeExtension(transformedFile, ".exe.mdb");
+                        targetName = Path.ChangeExtension(targetName, ".exe.mdb");
+                    }
+                    else if (File.Exists(Path.ChangeExtension(transformedFile, ".dll.mdb")))
+                    {
+                        transformedFile = Path.ChangeExtension(transformedFile, ".dll.mdb");
+                        targetName = Path.ChangeExtension(targetName, ".dll.mdb");
+                    }
+                }
+
                 File.Copy(transformedFile, targetName, overwrite: true);
             }
         }
