@@ -170,14 +170,9 @@ namespace Microsoft.DotNet.ProjectModel.Resolution
                             continue;
                         }
 
-                        if (library.Identity.Version.IsPrerelease && !versionRange.IncludePrerelease)
-                        {
-                            versionRange = VersionRange.SetIncludePrerelease(versionRange, includePrerelease: true);
-                        }
-
                         if (item.Library != library && !versionRange.Satisfies(library.Identity.Version))
                         {
-                            var message = $"Dependency conflict. {item.Library.Identity} expected {FormatLibraryRange(item.Dependency)} but got {library.Identity.Version}";
+                            var message = $"Dependency conflict. {item.Library.Identity} expected {FormatLibraryRange(item.Dependency)} but received {library.Identity.Version}";
 
                             messages.Add(
                             new DiagnosticMessage(

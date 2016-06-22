@@ -1,10 +1,12 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using Microsoft.Dnx.Runtime.Common.CommandLine;
-using Microsoft.DotNet.Cli.Utils;
 using System;
 using System.IO;
+using Microsoft.DotNet.Cli.CommandLine;
+using Microsoft.DotNet.Cli.Utils;
+using Microsoft.DotNet.ProjectModel;
+using Microsoft.DotNet.Tools.Common;
 
 namespace Microsoft.DotNet.Tools.Publish
 {
@@ -28,6 +30,7 @@ namespace Microsoft.DotNet.Tools.Publish
             var configuration = app.Option("-c|--configuration <CONFIGURATION>", "Configuration under which to build", CommandOptionType.SingleValue);
             var projectPath = app.Argument("<PROJECT>", "The project to publish, defaults to the current directory. Can be a path to a project.json or a project directory");
             var nativeSubdirectories = app.Option("--native-subdirectory", "Temporary mechanism to include subdirectories from native assets of dependency packages in output", CommandOptionType.NoValue);
+            var noBuild = app.Option("--no-build", "Do not build projects before publishing", CommandOptionType.NoValue);
 
             app.OnExecute(() =>
             {
@@ -35,7 +38,7 @@ namespace Microsoft.DotNet.Tools.Publish
                 
                 publish.Framework = framework.Value();
                 publish.Runtime = runtime.Value();
-                publish.BuildBasePath = buildBasePath.Value();
+                publish.BuildBasePath = PathUtility.GetFullPath(buildBasePath.Value());
                 publish.OutputPath = output.Value();
                 
                 var cv = configuration.Value();
@@ -51,6 +54,9 @@ namespace Microsoft.DotNet.Tools.Publish
                 publish.NativeSubdirectories = nativeSubdirectories.HasValue();
                 publish.ProjectPath = projectPath.Value;
                 publish.VersionSuffix = versionSuffix.Value();
+                publish.ShouldBuild = !noBuild.HasValue();
+
+                publish.Workspace = BuildWorkspace.Create(versionSuffix.Value());
 
                 if (string.IsNullOrEmpty(publish.ProjectPath))
                 {

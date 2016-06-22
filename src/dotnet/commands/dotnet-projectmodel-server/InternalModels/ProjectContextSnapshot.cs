@@ -4,10 +4,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.DotNet.ProjectModel.Compilation;
+using Microsoft.DotNet.Cli.Compiler.Common;
+using Microsoft.DotNet.ProjectModel.Files;
+using Microsoft.DotNet.ProjectModel.Graph;
 using Microsoft.DotNet.ProjectModel.Server.Helpers;
 using Microsoft.DotNet.ProjectModel.Server.Models;
-using Microsoft.DotNet.Cli.Compiler.Common;
 using NuGet.Frameworks;
 
 namespace Microsoft.DotNet.ProjectModel.Server
@@ -23,13 +24,13 @@ namespace Microsoft.DotNet.ProjectModel.Server
         public IReadOnlyList<DiagnosticMessage> DependencyDiagnostics { get; set; }
         public IDictionary<string, DependencyDescription> Dependencies { get; set; }
 
-        public static ProjectContextSnapshot Create(ProjectContext context, string configuration, IEnumerable<string> currentSearchPaths)
+        public static ProjectContextSnapshot Create(ProjectContext context, string configuration, IEnumerable<string> previousSearchPaths)
         {
             var snapshot = new ProjectContextSnapshot();
 
             var allDependencyDiagnostics = new List<DiagnosticMessage>();
             allDependencyDiagnostics.AddRange(context.LibraryManager.GetAllDiagnostics());
-            allDependencyDiagnostics.AddRange(DependencyTypeChangeFinder.Diagnose(context, currentSearchPaths));
+            allDependencyDiagnostics.AddRange(DependencyTypeChangeFinder.Diagnose(context, previousSearchPaths));
 
             var diagnosticsLookup = allDependencyDiagnostics.ToLookup(d => d.Source);
 
@@ -37,7 +38,7 @@ namespace Microsoft.DotNet.ProjectModel.Server
                                     .GetAllExports()
                                     .ToDictionary(export => export.Library.Identity.Name);
 
-            var allSourceFiles = new List<string>(context.ProjectFile.Files.SourceFiles);
+            var allSourceFiles = new List<string>(GetSourceFiles(context, configuration));
             var allFileReferences = new List<string>();
             var allProjectReferences = new List<ProjectReferenceDescription>();
             var allDependencies = new Dictionary<string, DependencyDescription>();
@@ -51,15 +52,13 @@ namespace Microsoft.DotNet.ProjectModel.Server
                 var description = DependencyDescription.Create(export.Library, diagnostics, allExports);
                 allDependencies[description.Name] = description;
 
-                var projectDescription = export.Library as ProjectDescription;
-                if (projectDescription != null)
+                var projectReferene = ProjectReferenceDescription.Create(export.Library);
+                if (projectReferene != null && export.Library.Identity.Name != context.ProjectFile.Name)
                 {
-                    if (projectDescription.Identity.Name != context.ProjectFile.Name)
-                    { 
-                        allProjectReferences.Add(ProjectReferenceDescription.Create(projectDescription));
-                    }
+                    allProjectReferences.Add(projectReferene);
                 }
-                else
+                
+                if (export.Library.Identity.Type != LibraryType.Project)
                 {
                     allFileReferences.AddRange(export.CompilationAssemblies.Select(asset => asset.ResolvedPath));
                 }
@@ -75,6 +74,20 @@ namespace Microsoft.DotNet.ProjectModel.Server
             snapshot.Dependencies = allDependencies;
 
             return snapshot;
+        }
+
+        private static IEnumerable<string> GetSourceFiles(ProjectContext context, string configuration)
+        {
+            var compilerOptions = context.ProjectFile.GetCompilerOptions(context.TargetFramework, configuration);
+
+            if (compilerOptions.CompileInclude == null)
+            {
+                return context.ProjectFile.Files.SourceFiles;
+            }
+
+            var includeFiles = IncludeFilesResolver.GetIncludeFiles(compilerOptions.CompileInclude, "/", diagnostics: null);
+
+            return includeFiles.Select(f => f.SourcePath);
         }
     }
 }

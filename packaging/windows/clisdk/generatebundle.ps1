@@ -4,13 +4,16 @@
 param(
     [Parameter(Mandatory=$true)][string]$CLISDKMSIFile,
     [Parameter(Mandatory=$true)][string]$SharedFxMSIFile,
+    [Parameter(Mandatory=$true)][string]$HostFxrMSIFile,
     [Parameter(Mandatory=$true)][string]$SharedHostMSIFile,
     [Parameter(Mandatory=$true)][string]$DotnetBundleOutput,
     [Parameter(Mandatory=$true)][string]$WixRoot,
+    [Parameter(Mandatory=$true)][string]$ProductMoniker,
     [Parameter(Mandatory=$true)][string]$DotnetMSIVersion,
-    [Parameter(Mandatory=$true)][string]$DotnetCLIVersion,
-    [Parameter(Mandatory=$true)][string]$Architecture,
-    [Parameter(Mandatory=$true)][string]$ReleaseSuffix
+    [Parameter(Mandatory=$true)][string]$DotnetCLIDisplayVersion,
+    [Parameter(Mandatory=$true)][string]$DotnetCLINugetVersion,
+    [Parameter(Mandatory=$true)][string]$UpgradeCode,
+    [Parameter(Mandatory=$true)][string]$Architecture
 )
 
 . "$PSScriptRoot\..\..\..\scripts\common\_common.ps1"
@@ -27,11 +30,14 @@ function RunCandleForBundle
     .\candle.exe -nologo `
         -dDotnetSrc="$inputDir" `
         -dMicrosoftEula="$RepoRoot\packaging\osx\clisdk\resources\en.lproj\eula.rtf" `
+        -dProductMoniker="$ProductMoniker" `
         -dBuildVersion="$DotnetMSIVersion" `
-        -dDisplayVersion="$DotnetCLIVersion" `
-        -dReleaseSuffix="$ReleaseSuffix" `
+        -dDisplayVersion="$DotnetCLIDisplayVersion" `
+        -dNugetVersion="$DotnetCLINugetVersion" `
         -dCLISDKMsiSourcePath="$CLISDKMSIFile" `
+        -dUpgradeCode="$UpgradeCode" `
         -dSharedFXMsiSourcePath="$SharedFxMSIFile" `
+        -dHostFXRMsiSourcePath="$HostFxrMSIFile" `
         -dSharedHostMsiSourcePath="$SharedHostMSIFile" `
         -arch "$Architecture" `
         -ext WixBalExtension.dll `

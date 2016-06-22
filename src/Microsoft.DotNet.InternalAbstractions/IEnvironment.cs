@@ -3,7 +3,7 @@
 
 namespace Microsoft.Extensions.EnvironmentAbstractions
 {
-    internal interface IEnvironment
+    public interface IEnvironment
     {
         string GetEnvironmentVariable(string name);
     }

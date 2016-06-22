@@ -38,17 +38,9 @@ namespace Microsoft.DotNet.ProjectModel
                     extension = FileNameSuffixes.DotNet.DynamicLib;
                 }
 
-                var compilationOptions = Project.GetCompilerOptions(Framework, Configuration);
+                var compilerOptions = Project.GetCompilerOptions(Framework, Configuration);
 
-                return Path.Combine(BasePath, compilationOptions.OutputName + extension);
-            }
-        }
-
-        public string Deps
-        {
-            get
-            {
-                return Path.ChangeExtension(Assembly, FileNameSuffixes.Deps);
+                return Path.Combine(BasePath, compilerOptions.OutputName + extension);
             }
         }
 
@@ -84,7 +76,6 @@ namespace Microsoft.DotNet.ProjectModel
             {
                 if (!Framework.IsDesktop())
                 {
-                    yield return Deps;
                     yield return DepsJson;
                     yield return RuntimeConfigJson;
                 }

@@ -1,7 +1,9 @@
-﻿using Microsoft.DotNet.Tools.Test.Utilities;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Microsoft.DotNet.TestFramework;
+using Microsoft.DotNet.Tools.Test.Utilities;
+using FluentAssertions;
 using Xunit;
 
 namespace Microsoft.DotNet.Tools.Publish.Tests
@@ -23,19 +25,19 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
             var testInstance = TestAssetsManager.CreateTestInstance("PortableTests")
                 .WithLockFiles();
 
-            var publishCommand = new PublishCommand(Path.Combine(testInstance.TestRoot, "PortableAppWithNative"));
-            var publishResult = publishCommand.Execute();
+            var publishDir = Publish(testInstance);
 
-            publishResult.Should().Pass();
-
-            var publishDir = publishCommand.GetOutputDirectory(portable: true);
             publishDir.Should().HaveFiles(new[]
             {
                 "PortableAppWithNative.dll",
-                "PortableAppWithNative.deps",
                 "PortableAppWithNative.deps.json"
             });
 
+            // Prior to `type:platform` trimming, this would have been published.
+            publishDir.Should().NotHaveFile("System.Linq.dll");
+
+            // PortableAppWithNative references a Libuv version that is explicitly
+            // not what is in Microsoft.NETCore.App.
             var runtimesOutput = publishDir.Sub("runtimes");
 
             runtimesOutput.Should().Exist();
@@ -49,6 +51,67 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
                 nativeDir.Should().Exist();
                 nativeDir.Should().HaveFile(output.Item2);
             }
+        }
+
+        [Fact]
+        public void PortableAppWithIntentionalDowngradePublishesDowngradedManagedCode()
+        {
+            var testInstance = TestAssetsManager.CreateTestInstance("PortableTests")
+                .WithLockFiles();
+
+            var publishCommand = new PublishCommand(Path.Combine(testInstance.TestRoot, "PortableAppWithIntentionalManagedDowngrade"));
+            var publishResult = publishCommand.Execute();
+
+            publishResult.Should().Pass();
+
+            var publishDir = publishCommand.GetOutputDirectory(portable: true);
+            publishDir.Should().HaveFiles(new[]
+            {
+                "PortableAppWithIntentionalManagedDowngrade.dll",
+                "PortableAppWithIntentionalManagedDowngrade.deps.json",
+                "System.Linq.dll"
+            });
+        }
+
+        [Fact]
+        public void PortableAppWithRuntimeTargetsDoesNotHaveRuntimeConfigDevJsonFile()
+        {
+            var testInstance = TestAssetsManager.CreateTestInstance("PortableTests")
+                .WithLockFiles();
+
+            var publishDir = Publish(testInstance);
+
+            publishDir.Should().NotHaveFile("PortableAppWithNative.runtimeconfig.dev.json");
+        }
+
+        [Fact]
+        public void RefsPublishTest()
+        {
+            TestInstance instance = TestAssetsManager.CreateTestInstance("PortableTests")
+                                                     .WithLockFiles();
+
+            var publishCommand = new PublishCommand(Path.Combine(instance.TestRoot, "PortableAppCompilationContext"));
+            publishCommand.Execute().Should().Pass();
+
+            publishCommand.GetOutputDirectory(true).Should().HaveFile("PortableAppCompilationContext.dll");
+
+            var refsDirectory = new DirectoryInfo(Path.Combine(publishCommand.GetOutputDirectory(true).FullName, "refs"));
+            // Microsoft.CodeAnalysis.CSharp is IL only
+            refsDirectory.Should().NotHaveFile("Microsoft.CodeAnalysis.CSharp.dll");
+            // System.IO has facede
+            refsDirectory.Should().HaveFile("System.IO.dll");
+            // Libraries in which lib==ref should be deduped
+            refsDirectory.Should().NotHaveFile("PortableAppCompilationContext.dll");
+        }
+
+        private DirectoryInfo Publish(TestInstance testInstance)
+        {
+            var publishCommand = new PublishCommand(Path.Combine(testInstance.TestRoot, "PortableAppWithNative"));
+            var publishResult = publishCommand.Execute();
+
+            publishResult.Should().Pass();
+
+            return publishCommand.GetOutputDirectory(portable: true);
         }
     }
 }

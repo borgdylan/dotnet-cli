@@ -1,70 +1,79 @@
 % DOTNET-PUBLISH(1)
-% Zlatko Knezevic zlakne@microsoft.com
-% January 2016
+% Microsoft Corporation dotnetclifeedback@microsoft.com
+% June 2016
 
-# NAME
+## NAME
 
-`dotnet-publish` - packs the application and all of its dependencies into a folder getting it ready for publishing
+`dotnet-publish` - Packs the application and all of its dependencies into a folder getting it ready for publishing
 
-# SYNOPSIS
+## SYNOPSIS
 
-dotnet-publish [--framework]  
-    [--runtime] [--output]  
-    [--configuration]  
-    [< project >]  
+`dotnet publish [--framework]  
+    [--runtime] [--build-base-path] [--output]  
+    [--version-suffix] [--configuration]  
+    [<project>]`  
 
-# DESCRIPTION
+## DESCRIPTION
 
-`dotnet-publish` will compile the application, read through its dependencies specified in `project.json` and publish the resulting set of files to a directory. 
-This directory will contain the assemblies, the runtime as well as the executable version of the application. This directory can then be moved to a different machine and the application will be able to run regardless of existence of any other runtime. 
+`dotnet publish` compiles the application, reads through its dependencies specified in the `project.json` file and publishes the resulting set of files to a directory. 
 
-The native dependencies of the runtime are not packaged with the application. This means that the target machine needs to have the native dependencies installed in order for the application to run.  
+Depending on the type of portable app, the resulting directory will contain the following:
 
-# OPTIONS
+1. **Portable application** - application's intermediate language (IL) code and all of application's managed dependencies.
+    * **Portable application with native dependencies** - same as above with a sub-directory for the supported platform of each native
+    dependency. 
+2. **Self-contained application** - same as above plus the entire runtime for the targeted platform.
+
+The above types are covered in more details in the [types of portable applications](../../app-types.md) topic. 
+
+## OPTIONS
 
 `[project]` 
     
-    `dotnet-publish` needs access to `project.json` to work. If it is not specified on invocation via [project], `project.json` in the current directory will be the default.     If no `project.json` can be found, `dotnet-publish` will error out. `dotnet-publish` command also requires certain dependencies in the `project.json` to work. Namely the `Microsoft.NETCore.Runtime` package must be referenced as a dependency in order for the command to copy the runtime files as well as the application's files to the published location.  
+`dotnet publish` needs access to the `project.json` file to work. If it is not specified on invocation via [project], `project.json` in the current directory will be the default.     
+If no `project.json` can be found, `dotnet publish` will throw an error. 
 
 `-f`, `--framework` [FID]
 
-    Publish the application for a given framework identifier (FID). If not specified, FID is read from `project.json`. In case of no valid framework found, the command will error out. In case of multiple valid frameworks found, the command will publish for all valid frameworks. 
+Publishes the application for a given framework identifier (FID). If not specified, FID is read from `project.json`. In no valid framework is found, the command will throw an error. If multiple valid frameworks are found, the command will publish for all valid frameworks. 
 
 
 `-r`, `--runtime` [RID]
 
-    Publish the application for a given runtime. If the option is not specified, the command will default to the runtime for the current operationg system. Supported values for the option at this time are:
+Publishes the application for a given runtime. 
 
-        * ubuntu.14.04-x64
-        * win7-x64
-        * osx.10.10-x64
+`-b`, `--build-base-path` [DIR]
+
+Directory in which to place temporary outputs.
 
 `-o`, `--output`
 
-    Specify the path where to place the directory. If not specified, will default to _./bin/[configuration]/[framework]/[runtime]/_
+Specify the path where to place the directory. If not specified, it will default to _./bin/[configuration]/[framework]/_ 
+for portable applications or _./bin/[configuration]/[framework]/[runtime]_ for self-contained applications.
+
+--version-suffix [VERSION_SUFFIX]
+
+Defines what `*` should be replaced with in the version field in the project.json file.
 
 `-c`, `--configuration [Debug|Release]`
 
-    Configuration to use when publishing. If not specified, will default to "Debug".
+Configuration to use when publishing. The default value is Debug.
 
-# EXAMPLES
+## EXAMPLES
 
-`dotnet-publish`
+`dotnet publish`
 
-    Publish the current application using the `project.json` framework and runtime for the current operating system. 
+Publishes an application using the framework found in `project.json`. If `project.json` contains `runtimes` node, publish for the RID of the current platform.
 
-`dotnet-publish ~/projects/app1/project.json`
+`dotnet publish ~/projects/app1/project.json`
     
-    Publish the application using the specified `project.json`; also use framework specified withing and runtime for the current operating system. 
+Publishes the application using the specified `project.json`.
 	
-`dotnet-publish --framework dnxcore50`
+`dotnet publish --framework netcoreapp1.0`
     
-    Publish the current application using the `dnxcore50` framework and runtime for the current operating system. 
+Publishes the current application using the `netcoreapp1.0` framework.
 	
-`dotnet-publish --framework dnxcore50 --runtime osx.10.10-x64`
+`dotnet publish --framework netcoreapp1.0 --runtime osx.10.11-x64`
     
-    Publish the current application using the `dnxcore50` framework and runtime for `OS X 10.10`
-
-# SEE ALSO
-
-dotnet-restore(1), dotnet-compile(1)
+Publishes the current application using the `netcoreapp1.0` framework and runtime for `OS X 10.10`. This RID has to 
+exist in the `project.json` `runtimes` node.

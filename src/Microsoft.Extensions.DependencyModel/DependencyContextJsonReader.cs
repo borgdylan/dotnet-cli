@@ -12,6 +12,8 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContextJsonReader : IDependencyContextReader
     {
+        private readonly IDictionary<string, string> _stringPool = new Dictionary<string, string>();
+
         public DependencyContext Read(Stream stream)
         {
             if (stream == null)
@@ -26,6 +28,19 @@ namespace Microsoft.Extensions.DependencyModel
                     return Read(root);
                 }
             }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _stringPool.Clear();
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
         }
 
         private bool IsRuntimeTarget(string name) => name.Contains(DependencyContextStrings.VersionSeperator);
@@ -141,7 +156,8 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             return new CompilationOptions(
-                compilationOptionsObject[DependencyContextStrings.DefinesPropertyName]?.Values<string>() ?? Enumerable.Empty<string>(),
+                compilationOptionsObject[DependencyContextStrings.DefinesPropertyName]?.Values<string>().ToArray() ?? Enumerable.Empty<string>(),
+                // ToArray is here to prevent IEnumerable<string> holding to json object graph
                 compilationOptionsObject[DependencyContextStrings.LanguageVersionPropertyName]?.Value<string>(),
                 compilationOptionsObject[DependencyContextStrings.PlatformPropertyName]?.Value<string>(),
                 compilationOptionsObject[DependencyContextStrings.AllowUnsafePropertyName]?.Value<bool>(),
@@ -162,7 +178,9 @@ namespace Microsoft.Extensions.DependencyModel
             {
                 return Enumerable.Empty<Library>();
             }
-            return librariesObject.Properties().Select(property => ReadLibrary(property, runtime, libraryStubs));
+            return librariesObject.Properties()
+                .Select(property => ReadLibrary(property, runtime, libraryStubs))
+                .Where(library => library != null);
         }
 
         private Library ReadLibrary(JProperty property, bool runtime, Dictionary<string, LibraryStub> libraryStubs)
@@ -177,8 +195,8 @@ namespace Microsoft.Extensions.DependencyModel
 
             var seperatorPosition = nameWithVersion.IndexOf(DependencyContextStrings.VersionSeperator);
 
-            var name = nameWithVersion.Substring(0, seperatorPosition);
-            var version = nameWithVersion.Substring(seperatorPosition + 1);
+            var name = Pool(nameWithVersion.Substring(0, seperatorPosition));
+            var version = Pool(nameWithVersion.Substring(seperatorPosition + 1));
 
             var libraryObject = (JObject)property.Value;
 
@@ -186,6 +204,13 @@ namespace Microsoft.Extensions.DependencyModel
 
             if (runtime)
             {
+                // Runtime section of this library was trimmed by type:platform
+                var isCompilationOnly = libraryObject.Value<bool?>(DependencyContextStrings.CompilationOnlyPropertyName);
+                if (isCompilationOnly == true)
+                {
+                    return null;
+                }
+
                 var runtimeTargetsObject = (JObject)libraryObject[DependencyContextStrings.RuntimeTargetsPropertyName];
 
                 var entries = ReadRuntimeTargetEntries(runtimeTargetsObject).ToArray();
@@ -194,7 +219,8 @@ namespace Microsoft.Extensions.DependencyModel
                 var nativeLibraryGroups = new List<RuntimeAssetGroup>();
                 foreach (var ridGroup in entries.GroupBy(e => e.Rid))
                 {
-                    var groupRuntimeAssemblies = entries.Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
+                    var groupRuntimeAssemblies = ridGroup
+                        .Where(e => e.Type == DependencyContextStrings.RuntimeAssetType)
                         .Select(e => e.Path)
                         .ToArray();
 
@@ -205,7 +231,8 @@ namespace Microsoft.Extensions.DependencyModel
                             groupRuntimeAssemblies.Where(a => Path.GetFileName(a) != "_._")));
                     }
 
-                    var groupNativeLibraries = entries.Where(e => e.Type == DependencyContextStrings.NativeAssetType)
+                    var groupNativeLibraries = ridGroup
+                        .Where(e => e.Type == DependencyContextStrings.NativeAssetType)
                         .Select(e => e.Path)
                         .ToArray();
 
@@ -260,13 +287,13 @@ namespace Microsoft.Extensions.DependencyModel
             foreach (var resourceProperty in resourcesObject)
             {
                 yield return new ResourceAssembly(
-                    locale: resourceProperty.Value[DependencyContextStrings.LocalePropertyName]?.Value<string>(),
+                    locale: Pool(resourceProperty.Value[DependencyContextStrings.LocalePropertyName]?.Value<string>()),
                     path: resourceProperty.Key
                     );
             }
         }
 
-        private static IEnumerable<RuntimeTargetEntryStub> ReadRuntimeTargetEntries(JObject runtimeTargetObject)
+        private IEnumerable<RuntimeTargetEntryStub> ReadRuntimeTargetEntries(JObject runtimeTargetObject)
         {
             if (runtimeTargetObject == null)
             {
@@ -278,8 +305,8 @@ namespace Microsoft.Extensions.DependencyModel
                 yield return new RuntimeTargetEntryStub()
                 {
                     Path = libraryProperty.Key,
-                    Rid = libraryObject[DependencyContextStrings.RidPropertyName].Value<string>(),
-                    Type = libraryObject[DependencyContextStrings.AssetTypePropertyName].Value<string>()
+                    Rid = Pool(libraryObject[DependencyContextStrings.RidPropertyName].Value<string>()),
+                    Type = Pool(libraryObject[DependencyContextStrings.AssetTypePropertyName].Value<string>())
                 };
             }
         }
@@ -296,7 +323,7 @@ namespace Microsoft.Extensions.DependencyModel
             return assembliesObject.Properties().Select(property => property.Name).ToArray();
         }
 
-        private static Dependency[] ReadDependencies(JObject libraryObject)
+        private Dependency[] ReadDependencies(JObject libraryObject)
         {
             var dependenciesObject = (JObject)libraryObject[DependencyContextStrings.DependenciesPropertyName];
 
@@ -306,7 +333,7 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             return dependenciesObject.Properties()
-                .Select(property => new Dependency(property.Name, (string)property.Value)).ToArray();
+                .Select(property => new Dependency(Pool(property.Name), Pool((string)property.Value))).ToArray();
         }
 
         private Dictionary<string, LibraryStub> ReadLibraryStubs(JObject librariesObject)
@@ -319,15 +346,31 @@ namespace Microsoft.Extensions.DependencyModel
                     var value = (JObject)libraryProperty.Value;
                     var stub = new LibraryStub
                     {
-                        Name = libraryProperty.Key,
+                        Name = Pool(libraryProperty.Key),
                         Hash = value[DependencyContextStrings.Sha512PropertyName]?.Value<string>(),
-                        Type = value[DependencyContextStrings.TypePropertyName].Value<string>(),
+                        Type = Pool(value[DependencyContextStrings.TypePropertyName].Value<string>()),
                         Serviceable = value[DependencyContextStrings.ServiceablePropertyName]?.Value<bool>() == true
                     };
                     libraries.Add(stub.Name, stub);
                 }
             }
             return libraries;
+        }
+
+        private string Pool(string s)
+        {
+            if (s == null)
+            {
+                return null;
+            }
+
+            string result;
+            if (!_stringPool.TryGetValue(s, out result))
+            {
+                _stringPool[s] = s;
+                result = s;
+            }
+            return result;
         }
 
         private struct RuntimeTargetEntryStub

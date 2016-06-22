@@ -1,11 +1,17 @@
 {
     "description": "Abstractions for reading `.deps` files.",
-    "version": "1.0.0-*",
-    "repository": {
-        "type": "git",
-        "url": "git://github.com/dotnet/cli"
+    "version": "1.0.1-beta-*",
+    "packOptions": {
+        "repository": {
+            "type": "git",
+            "url": "git://github.com/dotnet/cli"
+        }
     },
     "compilationOptions": {
+        "warningsAsErrors": true,
+        "keyFile": "../../tools/Key.snk"
+    },
+    "buildOptions": {
         "warningsAsErrors": true,
         "keyFile": "../../tools/Key.snk"
     },
@@ -15,19 +21,18 @@
             "version": "1.0.0-rc2-16054"
         },
         "Microsoft.DotNet.InternalAbstractions": {
-            "target": "project",
-            "version": "1.0.0-*"
+            "target": "project"
         },
-        "Newtonsoft.Json": "7.0.1",
-        "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-20100"
+        "Newtonsoft.Json": "9.0.1"
     },
     "frameworks": {
         "net451": {},
-        "netstandard1.5": {
-            "imports": "dnxcore50",
+        "netstandard1.6": {
+            "imports": "portable-net45+wp80+win8+wpa81+dnxcore50",
             "dependencies": {
-                "NETStandard.Library": "1.5.0-rc2-23925",
-                "System.Dynamic.Runtime": "4.0.11-rc2-23925"
+                "System.Diagnostics.Debug": "4.0.11",
+                "System.Dynamic.Runtime": "4.0.11",
+                "System.Linq": "4.1.0"
             }
         }
     },

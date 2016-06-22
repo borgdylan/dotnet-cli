@@ -32,13 +32,6 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
-        public AndConstraint<CommandResultAssertions> NotPass()
-        {
-            Execute.Assertion.ForCondition(_commandResult.ExitCode != 0)
-                .FailWith(AppendDiagnosticsTo($"Expected command to fail but it did not."));
-            return new AndConstraint<CommandResultAssertions>(this);
-        }
-
         public AndConstraint<CommandResultAssertions> Fail()
         {
             Execute.Assertion.ForCondition(_commandResult.ExitCode != 0)
@@ -88,6 +81,13 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
+        public AndConstraint<CommandResultAssertions> NotHaveStdErrContaining(string pattern)
+        {
+            Execute.Assertion.ForCondition(!_commandResult.StdErr.Contains(pattern))
+                .FailWith(AppendDiagnosticsTo($"The command error output contained a result it should not have contained: {pattern}{Environment.NewLine}"));
+            return new AndConstraint<CommandResultAssertions>(this);
+        }
+
         public AndConstraint<CommandResultAssertions> HaveStdErrMatching(string pattern, RegexOptions options = RegexOptions.None)
         {
             Execute.Assertion.ForCondition(Regex.Match(_commandResult.StdErr, pattern, options).Success)
@@ -119,16 +119,16 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
                        $"StdErr:{Environment.NewLine}{_commandResult.StdErr}{Environment.NewLine}"; ;
         }
 		
-		public AndConstraint<CommandResultAssertions> HaveSkippedProjectCompilation(string skippedProject)
+		public AndConstraint<CommandResultAssertions> HaveSkippedProjectCompilation(string skippedProject, string frameworkFullName)
         {
-            _commandResult.StdOut.Should().Contain($"Project {skippedProject} (.NETStandardApp,Version=v1.5) was previously compiled. Skipping compilation.");
+            _commandResult.StdOut.Should().Contain($"Project {skippedProject} ({frameworkFullName}) was previously compiled. Skipping compilation.");
 
             return new AndConstraint<CommandResultAssertions>(this);
         }
 
-        public AndConstraint<CommandResultAssertions> HaveCompiledProject(string compiledProject)
+        public AndConstraint<CommandResultAssertions> HaveCompiledProject(string compiledProject, string frameworkFullName)
         {
-            _commandResult.StdOut.Should().Contain($"Project {compiledProject} (.NETStandardApp,Version=v1.5) will be compiled");
+            _commandResult.StdOut.Should().Contain($"Project {compiledProject} ({frameworkFullName}) will be compiled");
 
             return new AndConstraint<CommandResultAssertions>(this);
         }

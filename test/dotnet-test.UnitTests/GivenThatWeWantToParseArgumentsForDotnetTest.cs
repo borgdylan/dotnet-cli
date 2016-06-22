@@ -12,7 +12,7 @@ namespace Microsoft.Dotnet.Tools.Test.Tests
     public class GivenThatWeWantToParseArgumentsForDotnetTest
     {
         private const string ProjectJson = "project.json";
-        private const string Framework = "netstandardapp1.5";
+        private const string Framework = "netcoreapp1.0";
         private const string Output = "some output";
         private const string BuildBasePath = "some build base path";
         private const string Config = "some config";
@@ -108,7 +108,7 @@ namespace Microsoft.Dotnet.Tools.Test.Tests
         [Fact]
         public void It_converts_the_framework_to_NugetFramework()
         {
-            _dotnetTestFullParams.Framework.DotNetFrameworkName.Should().Be(".NETStandardApp,Version=v1.5");
+            _dotnetTestFullParams.Framework.DotNetFrameworkName.Should().Be(".NETCoreApp,Version=v1.0");
         }
 
         [Fact]
@@ -141,7 +141,7 @@ namespace Microsoft.Dotnet.Tools.Test.Tests
         [Fact]
         public void It_sets_BuildBasePath_when_one_is_passed_in()
         {
-            _dotnetTestFullParams.BuildBasePath.Should().Be(BuildBasePath);
+            _dotnetTestFullParams.BuildBasePath.Should().Be(Path.GetFullPath(BuildBasePath));
         }
 
         [Fact]
@@ -191,6 +191,21 @@ namespace Microsoft.Dotnet.Tools.Test.Tests
         public void It_sets_no_build_to_false_when_it_is_not_passed_in()
         {
             _emptyDotnetTestParams.NoBuild.Should().BeFalse();
+        }
+
+        [Fact]
+        public void It_sets_Help_to_false_when_help_is_not_passed_in()
+        {
+            _dotnetTestFullParams.Help.Should().BeFalse();
+        }
+
+        [Fact]
+        public void It_sets_Help_to_true_when_help_is_passed_in()
+        {
+            var dotnetTestParams = new DotnetTestParams();
+            dotnetTestParams.Parse(new[] { "--help" });
+
+            dotnetTestParams.Help.Should().BeTrue();
         }
     }
 }

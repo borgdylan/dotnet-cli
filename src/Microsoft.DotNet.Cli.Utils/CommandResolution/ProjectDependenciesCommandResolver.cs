@@ -2,22 +2,20 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
+using Microsoft.DotNet.InternalAbstractions;
 using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.ProjectModel.Graph;
-using Microsoft.Extensions.PlatformAbstractions;
 using NuGet.Frameworks;
-using NuGet.Packaging;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
     public class ProjectDependenciesCommandResolver : ICommandResolver
     {
-        private static readonly CommandResolutionStrategy s_commandResolutionStrategy = 
+        private static readonly CommandResolutionStrategy s_commandResolutionStrategy =
             CommandResolutionStrategy.ProjectDependenciesPackage;
 
-        private IEnvironmentProvider _environment;
-        private IPackagedCommandSpecFactory _packagedCommandSpecFactory;
+        private readonly IEnvironmentProvider _environment;
+        private readonly IPackagedCommandSpecFactory _packagedCommandSpecFactory;
 
         public ProjectDependenciesCommandResolver(
             IEnvironmentProvider environment,
@@ -80,69 +78,49 @@ namespace Microsoft.DotNet.Cli.Utils
             var depsFilePath =
                 projectContext.GetOutputPaths(configuration, buildBasePath, outputPath).RuntimeFiles.DepsJson;
 
-            var dependencyLibraries = GetAllDependencyLibraries(projectContext);
-
-            return ResolveFromDependencyLibraries(
-                dependencyLibraries,
-                depsFilePath,
-                commandName,
-                allowedExtensions,
-                commandArguments,
-                projectContext);
-        }
-
-        private CommandSpec ResolveFromDependencyLibraries(
-            IEnumerable<LockFilePackageLibrary> dependencyLibraries,
-            string depsFilePath,
-            string commandName,
-            IEnumerable<string> allowedExtensions,
-            IEnumerable<string> commandArguments,
-            ProjectContext projectContext)
-        {
-            foreach (var dependencyLibrary in dependencyLibraries)
+            if (! File.Exists(depsFilePath))
             {
-                var commandSpec = ResolveFromDependencyLibrary(
-                    dependencyLibrary,
-                    depsFilePath,
-                    commandName,
-                    allowedExtensions,
-                    commandArguments,
-                    projectContext);
-
-                if (commandSpec != null)
-                {
-                    return commandSpec;
-                }
+                Reporter.Verbose.WriteLine($"projectdependenciescommandresolver: {depsFilePath} does not exist");
+                return null;
             }
 
-            return null;
-        }
+            var runtimeConfigPath =
+                projectContext.GetOutputPaths(configuration, buildBasePath, outputPath).RuntimeFiles.RuntimeConfigJson;
 
-        private CommandSpec ResolveFromDependencyLibrary(
-            LockFilePackageLibrary dependencyLibrary,
-            string depsFilePath,
-            string commandName,
-            IEnumerable<string> allowedExtensions,
-            IEnumerable<string> commandArguments,
-            ProjectContext projectContext)
-        {
+            if (! File.Exists(runtimeConfigPath))
+            {
+                Reporter.Verbose.WriteLine($"projectdependenciescommandresolver: {runtimeConfigPath} does not exist");
+                return null;
+            }
+
+            var toolLibrary = GetToolLibraryForContext(projectContext, commandName);
+
             return _packagedCommandSpecFactory.CreateCommandSpecFromLibrary(
-                        dependencyLibrary,
+                        toolLibrary,
                         commandName,
                         commandArguments,
                         allowedExtensions,
                         projectContext.PackagesDirectory,
                         s_commandResolutionStrategy,
-                        depsFilePath);
+                        depsFilePath,
+                        runtimeConfigPath);
         }
 
-        private IEnumerable<LockFilePackageLibrary> GetAllDependencyLibraries(
-            ProjectContext projectContext)
+        private LockFileTargetLibrary GetToolLibraryForContext(
+            ProjectContext projectContext, string commandName)
         {
-            return projectContext.LibraryManager.GetLibraries()
-                .Where(l => l.GetType() == typeof(PackageDescription))
-                .Select(l => l as PackageDescription)
-                .Select(p => p.Library);
+            var toolLibraries = projectContext.LockFile.Targets
+                .FirstOrDefault(t => t.TargetFramework.GetShortFolderName()
+                                      .Equals(projectContext.TargetFramework.GetShortFolderName()))
+                ?.Libraries.Where(l => l.Name == commandName ||
+                    l.RuntimeAssemblies.Any(r => Path.GetFileNameWithoutExtension(r.Path) == commandName)).ToList();
+
+            if (toolLibraries?.Count() > 1)
+            {
+                throw new InvalidOperationException($"Ambiguous command name: {commandName}");
+            }
+
+            return toolLibraries?.FirstOrDefault();
         }
 
         private ProjectContext GetProjectContextFromDirectory(string directory, NuGetFramework framework)
@@ -159,17 +137,11 @@ namespace Microsoft.DotNet.Cli.Utils
                 return null;
             }
 
-            var projectContext = ProjectContext.Create(
-                projectRootPath, 
-                framework, 
-                PlatformServices.Default.Runtime.GetAllCandidateRuntimeIdentifiers());
+            return ProjectContext.Create(
+                projectRootPath,
+                framework,
+                RuntimeEnvironmentRidExtensions.GetAllCandidateRuntimeIdentifiers());
 
-            if (projectContext.RuntimeIdentifier == null)
-            {
-                return null;
-            }
-
-            return projectContext;
         }
 
         private IEnumerable<string> GetAllowedCommandExtensionsFromEnvironment(IEnvironmentProvider environment)

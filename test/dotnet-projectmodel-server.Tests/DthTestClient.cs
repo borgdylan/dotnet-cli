@@ -1,5 +1,5 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Concurrent;
@@ -9,7 +9,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Xunit;
 
@@ -21,9 +20,9 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
         private readonly BinaryReader _reader;
         private readonly BinaryWriter _writer;
         private readonly NetworkStream _networkStream;
-        private readonly ILogger _logger;
         private readonly BlockingCollection<DthMessage> _messageQueue;
         private readonly CancellationTokenSource _readCancellationToken;
+        private readonly TimeSpan _defaultTimeout = TimeSpan.FromSeconds(20);
 
         // Keeps track of initialized project contexts
         // REVIEW: This needs to be exposed if we ever create 2 clients in order to simulate how build
@@ -32,13 +31,11 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
         private int _nextContextId;
         private readonly Socket _socket;
 
-        public DthTestClient(DthTestServer server, ILoggerFactory loggerFactory)
+        public DthTestClient(DthTestServer server)
         {
             // Avoid Socket exception 10006 on Linux
             Thread.Sleep(100);
-            
-            _logger = loggerFactory.CreateLogger<DthTestClient>();
-            
+
             _socket = new Socket(AddressFamily.InterNetwork,
                                  SocketType.Stream,
                                  ProtocolType.Tcp);
@@ -57,12 +54,17 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
             Task.Run(() => ReadMessage(_readCancellationToken.Token), _readCancellationToken.Token);
         }
 
-        public void SendPayLoad(Project project, string messageType)
+        public void SendPayload(Project project, string messageType)
         {
-            SendPayLoad(project.ProjectDirectory, messageType);
+            SendPayload(project.ProjectDirectory, messageType);
         }
 
-        public void SendPayLoad(string projectPath, string messageType)
+        public void SendPayload(string projectPath, string messageType)
+        {
+            SendPayload(projectPath, messageType, new { });
+        }
+
+        public void SendPayload(string projectPath, string messageType, object payload)
         {
             int contextId;
             if (!_projectContexts.TryGetValue(projectPath, out contextId))
@@ -70,15 +72,15 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
                 Assert.True(false, $"Unable to resolve context for {projectPath}");
             }
 
-            SendPayLoad(contextId, messageType);
+            SendPayload(contextId, messageType, payload);
         }
 
-        public void SendPayLoad(int contextId, string messageType)
+        public void SendPayload(int contextId, string messageType)
         {
-            SendPayLoad(contextId, messageType, new { });
+            SendPayload(contextId, messageType, new { });
         }
 
-        public void SendPayLoad(int contextId, string messageType, object payload)
+        public void SendPayload(int contextId, string messageType, object payload)
         {
             lock (_writer)
             {
@@ -98,7 +100,7 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
             var contextId = _nextContextId++;
 
             _projectContexts[projectPath] = contextId;
-            SendPayLoad(contextId, MessageTypes.Initialize, new { ProjectFolder = projectPath });
+            SendPayload(contextId, MessageTypes.Initialize, new { ProjectFolder = projectPath });
 
             return contextId;
         }
@@ -108,7 +110,7 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
             var contextId = _nextContextId++;
 
             _projectContexts[projectPath] = contextId;
-            SendPayLoad(contextId, MessageTypes.Initialize, new { ProjectFolder = projectPath, Version = protocolVersion });
+            SendPayload(contextId, MessageTypes.Initialize, new { ProjectFolder = projectPath, Version = protocolVersion });
 
             return contextId;
         }
@@ -118,14 +120,14 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
             var contextId = _nextContextId++;
 
             _projectContexts[projectPath] = contextId;
-            SendPayLoad(contextId, MessageTypes.Initialize, new { ProjectFolder = projectPath, Version = protocolVersion, Configuration = configuration });
+            SendPayload(contextId, MessageTypes.Initialize, new { ProjectFolder = projectPath, Version = protocolVersion, Configuration = configuration });
 
             return contextId;
         }
 
         public void SetProtocolVersion(int version)
         {
-            SendPayLoad(0, MessageTypes.ProtocolVersion, new { Version = version });
+            SendPayload(0, MessageTypes.ProtocolVersion, new { Version = version });
         }
 
         public List<DthMessage> DrainMessage(int count)
@@ -133,7 +135,7 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
             var result = new List<DthMessage>();
             while (count > 0)
             {
-                result.Add(GetResponse(timeout: TimeSpan.FromSeconds(10)));
+                result.Add(GetResponse(timeout: _defaultTimeout));
                 count--;
             }
 
@@ -142,7 +144,7 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
 
         public List<DthMessage> DrainAllMessages()
         {
-            return DrainAllMessages(TimeSpan.FromSeconds(10));
+            return DrainAllMessages(_defaultTimeout);
         }
 
         /// <summary>
@@ -177,7 +179,7 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
         /// <returns>The first match message</returns>
         public DthMessage DrainTillFirst(string type)
         {
-            return DrainTillFirst(type, TimeSpan.FromSeconds(10));
+            return DrainTillFirst(type, _defaultTimeout);
         }
 
         /// <summary>
@@ -228,7 +230,7 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
             _writer.Dispose();
             _networkStream.Dispose();
             _readCancellationToken.Cancel();
-            
+
             try
             {
                 _socket.Shutdown(SocketShutdown.Both);
@@ -238,7 +240,7 @@ namespace Microsoft.DotNet.ProjectModel.Server.Tests
                 // Swallow this error for now.
                 // This is a temporary fix for a random failure on CI. The issue happens on Windowx x86
                 // only.
-                _logger.LogError($"Exception thrown durning socket shutting down: {ex.SocketErrorCode}.");
+                Console.Error.WriteLine($"Exception thrown durning socket shutting down: {ex.SocketErrorCode}.");
             }
         }
 

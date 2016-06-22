@@ -3,11 +3,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using Microsoft.Dnx.Runtime.Common.CommandLine;
+using Microsoft.DotNet.Cli.CommandLine;
 using Microsoft.DotNet.Cli.Utils;
+using Microsoft.DotNet.Tools.Common;
 using NuGet.Frameworks;
 using static System.Int32;
 
@@ -43,9 +42,13 @@ namespace Microsoft.DotNet.Tools.Test
 
         public NuGetFramework Framework { get; set; }
 
+        public string UnparsedFramework { get; set; }
+
         public List<string> RemainingArguments { get; set; }
 
         public bool NoBuild { get; set; }
+
+        public bool Help { get; set; }
 
         public DotnetTestParams()
         {
@@ -57,6 +60,8 @@ namespace Microsoft.DotNet.Tools.Test
             };
 
             AddDotnetTestParameters();
+
+            Help = true;
         }
 
         public void Parse(string[] args)
@@ -95,18 +100,21 @@ namespace Microsoft.DotNet.Tools.Test
                     Port = port;
                 }
 
+                UnparsedFramework = _frameworkOption.Value();
                 if (_frameworkOption.HasValue())
                 {
                     Framework = NuGetFramework.Parse(_frameworkOption.Value());
                 }
 
                 Output = _outputOption.Value();
-                BuildBasePath = _buildBasePath.Value();
+                BuildBasePath = PathUtility.GetFullPath(_buildBasePath.Value());
                 Config = _configurationOption.Value() ?? Constants.DefaultConfiguration;
                 Runtime = _runtimeOption.Value();
                 NoBuild = _noBuildOption.HasValue();
 
                 RemainingArguments = _app.RemainingArguments;
+
+                Help = false;
 
                 return 0;
             });
@@ -150,7 +158,7 @@ namespace Microsoft.DotNet.Tools.Test
                 _app.Option("--no-build", "Do not build project before testing", CommandOptionType.NoValue);
             _projectPath = _app.Argument(
                 "<PROJECT>",
-                "The project to test, defaults to the current directory. Can be a path to a project.json or a project directory.");            
+                "The project to test, defaults to the current directory. Can be a path to a project.json or a project directory.");
         }
     }
 }

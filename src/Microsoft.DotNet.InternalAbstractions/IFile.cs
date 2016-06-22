@@ -5,12 +5,22 @@ using System.IO;
 
 namespace Microsoft.Extensions.EnvironmentAbstractions
 {
-    internal interface IFile
+    public interface IFile
     {
         bool Exists(string path);
 
         string ReadAllText(string path);
 
         Stream OpenRead(string path);
+
+        Stream OpenFile(
+            string path,
+            FileMode fileMode,
+            FileAccess fileAccess,
+            FileShare fileShare,
+            int bufferSize,
+            FileOptions fileOptions);
+
+        void CreateEmptyFile(string path);
     }
 }

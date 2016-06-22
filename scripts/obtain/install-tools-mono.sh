@@ -21,7 +21,7 @@ source "$DIR/../common/_common-mono.sh"
 
 # Ensure the latest stage0 is installed
 header "Installing dotnet stage 0"
-$REPOROOT/scripts/obtain/install.sh
+#$REPOROOT/scripts/obtain/install.sh
 
 # Put the stage0 on the PATH
 #export PATH=$REPOROOT/artifacts/$RID/stage0/bin:$PATH

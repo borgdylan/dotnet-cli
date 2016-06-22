@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0-*",
+  "dependencies": {
+    "Microsoft.NETCore.App": {
+      "type": "platform",
+      "version": "1.0.0"
+    },
+    "Microsoft.DotNet.Tools.Tests.Utilities": {
+      "target": "project"
+    },
+    "Microsoft.DotNet.Cli.Utils": {
+      "target": "project"
+    },
+    "xunit": "2.1.0",
+    "dotnet-test-xunit": "1.0.0-rc2-192208-24"
+  },
+  "frameworks": {
+    "netcoreapp1.0": {
+      "imports": [
+        "dotnet5.4",
+        "portable-net451+win8"
+      ]
+    }
+  },
+  "testRunner": "xunit",
+  "publishOptions": {
+    "include": [
+      "../../TestAssets/TestProjects/FSharpTestProjects/CompileFailApp/**/*",
+      "../../TestAssets/TestProjects/FSharpTestProjects/TestApp/**/*",
+      "../../TestAssets/TestProjects/FSharpTestProjects/TestAppWithArgs/**/*",
+      "../../TestAssets/TestProjects/FSharpTestProjects/TestLibrary/**/*",
+      "../../TestAssets/TestProjects/FSharpTestProjects/global.json"
+    ]
+  },
+  "buildOptions": {
+    "copyToOutput": {
+      "include": [
+        "../../TestAssets/TestProjects/FSharpTestProjects/CompileFailApp/**/*",
+        "../../TestAssets/TestProjects/FSharpTestProjects/TestApp/**/*",
+        "../../TestAssets/TestProjects/FSharpTestProjects/TestAppWithArgs/**/*",
+        "../../TestAssets/TestProjects/FSharpTestProjects/TestLibrary/**/*",
+        "../../TestAssets/TestProjects/FSharpTestProjects/global.json"
+      ]
+    }
+  }
+}

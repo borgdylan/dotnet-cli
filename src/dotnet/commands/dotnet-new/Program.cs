@@ -1,10 +1,11 @@
-﻿using Microsoft.Dnx.Runtime.Common.CommandLine;
+﻿using Microsoft.DotNet.Cli.CommandLine;
 using Microsoft.DotNet.Cli.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.IO.Compression;
 
 namespace Microsoft.DotNet.Tools.New
 {
@@ -19,12 +20,6 @@ namespace Microsoft.DotNet.Tools.New
                 return null;
             }
 
-            // filename.extension.template
-            if (parts.Length > 2 && string.Equals("template", parts[parts.Length - 1], StringComparison.OrdinalIgnoreCase))
-            {
-                return parts[parts.Length - 3] + "." + parts[parts.Length - 2];
-            }
-
             // filename.extension
             string temp = parts[parts.Length - 2] + "." + parts[parts.Length - 1];
             if (temp == "project.txt")
@@ -36,6 +31,13 @@ namespace Microsoft.DotNet.Tools.New
 
         public int CreateEmptyProject(string languageName, string templateDir)
         {
+            // Check if project.json exists in the folder
+            if (File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "project.json")))
+            {
+                Reporter.Error.WriteLine($"Creating new {languageName} project failed, project already exists.");
+                return 1;
+            }
+
             var thisAssembly = typeof(NewCommand).GetTypeInfo().Assembly;
             var resources = from resourceName in thisAssembly.GetManifestResourceNames()
                             where resourceName.Contains(templateDir)
@@ -47,11 +49,34 @@ namespace Microsoft.DotNet.Tools.New
             {
                 string fileName = GetFileNameFromResourceName(resourceName);
 
-                resourceNameToFileName.Add(resourceName, fileName);
-                if (File.Exists(fileName))
+                using (var resource = thisAssembly.GetManifestResourceStream(resourceName))
                 {
-                    Reporter.Error.WriteLine($"Creating new {languageName} project would override file {fileName}.");
-                    hasFilesToOverride = true;
+                    var archive = new ZipArchive(resource);
+
+                    try
+                    {
+                        // Check if other files from the template exists already, before extraction
+                        IEnumerable<string> fileNames = archive.Entries.Select(e => e.FullName);
+                        foreach (var entry in fileNames)
+                        {
+                            if (File.Exists(Path.Combine(Directory.GetCurrentDirectory(), entry)))
+                            {
+                                Reporter.Error.WriteLine($"Creating new {languageName} project failed, directory already contains {entry}");
+                                return 1;
+                            }
+                        }
+
+                        archive.ExtractToDirectory(Directory.GetCurrentDirectory());
+
+                        File.Move(
+                            Path.Combine(Directory.GetCurrentDirectory(), "project.json.template"),
+                            Path.Combine(Directory.GetCurrentDirectory(), "project.json"));
+                    }
+                    catch (IOException ex)
+                    {
+                        Reporter.Error.WriteLine(ex.Message);
+                        hasFilesToOverride = true;
+                    }
                 }
             }
 
@@ -59,17 +84,6 @@ namespace Microsoft.DotNet.Tools.New
             {
                 Reporter.Error.WriteLine($"Creating new {languageName} project failed.");
                 return 1;
-            }
-
-            foreach (var kv in resourceNameToFileName)
-            {
-                using (var fileStream = File.Create(kv.Value))
-                {
-                    using (var resource = thisAssembly.GetManifestResourceStream(kv.Key))
-                    {
-                        resource.CopyTo(fileStream);
-                    }
-                }
             }
 
             Reporter.Output.WriteLine($"Created new {languageName} project in {Directory.GetCurrentDirectory()}.");
@@ -91,9 +105,10 @@ namespace Microsoft.DotNet.Tools.New
             var type = app.Option("-t|--type <TYPE>", "Type of project", CommandOptionType.SingleValue);
 
             var dotnetNew = new NewCommand();
-            app.OnExecute(() => {
+            app.OnExecute(() =>
+            {
 
-                var csharp = new { Name = "C#", Alias = new[] { "c#", "cs", "csharp" }, TemplatePrefix = "CSharp", Templates = new[] { "Console" } };
+                var csharp = new { Name = "C#", Alias = new[] { "c#", "cs", "csharp" }, TemplatePrefix = "CSharp", Templates = new[] { "Console", "Web", "Lib", "xunittest" } };
                 var fsharp = new { Name = "F#", Alias = new[] { "f#", "fs", "fsharp" }, TemplatePrefix = "FSharp", Templates = new[] { "Console" } };
 
                 string languageValue = lang.Value() ?? csharp.Name;

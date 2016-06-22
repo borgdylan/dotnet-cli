@@ -1,15 +1,21 @@
 ﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.DotNet.Cli;
 using Microsoft.DotNet.Cli.Compiler.Common;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.ProjectModel.Compilation;
 using Microsoft.Extensions.DependencyModel;
+using NuGet.Frameworks;
+using Microsoft.DotNet.ProjectModel.Graph;
 
 namespace Microsoft.DotNet.Tools.Compiler
 {
@@ -24,7 +30,7 @@ namespace Microsoft.DotNet.Tools.Compiler
             _commandFactory = commandFactory;
         }
 
-        public override bool Compile(ProjectContext context, CompilerCommandApp args)
+        public override bool Compile(ProjectContext context, BuildCommandApp args)
         {
             // Set up Output Paths
             var outputPaths = context.GetOutputPaths(args.ConfigValue, args.BuildBasePathValue);
@@ -58,11 +64,10 @@ namespace Microsoft.DotNet.Tools.Compiler
                 diagnostics.Add(diag);
             }
 
-            if (missingFrameworkDiagnostics.Count > 0)
+            if(diagnostics.Any(d => d.Severity == DiagnosticMessageSeverity.Error))
             {
-                // The framework isn't installed so we should short circuit the rest of the compilation
-                // so we don't get flooded with errors
-                PrintSummary(missingFrameworkDiagnostics, sw);
+                // We got an unresolved dependency or missing framework. Don't continue the compilation.
+                PrintSummary(diagnostics, sw);
                 return false;
             }
 
@@ -77,6 +82,19 @@ namespace Microsoft.DotNet.Tools.Compiler
             };
 
             var compilationOptions = context.ResolveCompilationOptions(args.ConfigValue);
+
+            // Set default platform if it isn't already set and we're on desktop
+            if (compilationOptions.EmitEntryPoint == true && string.IsNullOrEmpty(compilationOptions.Platform) && context.TargetFramework.IsDesktop())
+            {
+                // See https://github.com/dotnet/cli/issues/2428 for more details.
+                #if NETCOREAPP1_0
+                compilationOptions.Platform = RuntimeInformation.ProcessArchitecture == Architecture.X64 ?
+                    "x64" : "anycpu32bitpreferred";
+                #else
+                compilationOptions.Platform = "anycpu32bitpreferred";
+                #endif
+            }
+
             var languageId = CompilerUtil.ResolveLanguageId(context);
 
             var references = new List<string>();
@@ -112,9 +130,15 @@ namespace Microsoft.DotNet.Tools.Compiler
             if (compilationOptions.PreserveCompilationContext == true)
             {
                 var allExports = exporter.GetAllExports().ToList();
+                var exportsLookup = allExports.ToDictionary(e => e.Library.Identity.Name);
+                var buildExclusionList = context.GetTypeBuildExclusionList(exportsLookup);
+                var filteredExports = allExports
+                    .Where(e => e.Library.Identity.Type.Equals(LibraryType.ReferenceAssembly) ||
+                        !buildExclusionList.Contains(e.Library.Identity.Name));
+
                 var dependencyContext = new DependencyContextBuilder().Build(compilationOptions,
-                    allExports,
-                    allExports,
+                    filteredExports,
+                    filteredExports,
                     false, // For now, just assume non-portable mode in the legacy deps file (this is going away soon anyway)
                     context.TargetFramework,
                     context.RuntimeIdentifier ?? string.Empty);
@@ -129,15 +153,15 @@ namespace Microsoft.DotNet.Tools.Compiler
                 compilerArgs.Add($"--resource:\"{depsJsonFile}\",{compilationOptions.OutputName}.deps.json");
             }
 
-            if (!AddNonCultureResources(context.ProjectFile, compilerArgs, intermediateOutputPath))
+            if (!AddNonCultureResources(context.ProjectFile, compilerArgs, intermediateOutputPath, compilationOptions))
             {
                 return false;
             }
             // Add project source files
-            var sourceFiles = CompilerUtil.GetCompilationSources(context);
+            var sourceFiles = CompilerUtil.GetCompilationSources(context, compilationOptions);
             compilerArgs.AddRange(sourceFiles);
 
-            var compilerName = context.ProjectFile.CompilerName;
+            var compilerName = compilationOptions.CompilerName;
 
             // Write RSP file
             var rsp = Path.Combine(intermediateOutputPath, $"dotnet-compile.rsp");
@@ -156,7 +180,7 @@ namespace Microsoft.DotNet.Tools.Compiler
 
             if (context.ProjectFile.HasRuntimeOutput(args.ConfigValue))
             {
-                var runtimeContext = context.CreateRuntimeContext(args.GetRuntimes());
+                var runtimeContext = args.Workspace.GetRuntimeContext(context, args.GetRuntimes());
                 var runtimeOutputPath = runtimeContext.GetOutputPaths(args.ConfigValue, args.BuildBasePathValue, args.OutputValue);
 
                 contextVariables.Add(
@@ -170,31 +194,16 @@ namespace Microsoft.DotNet.Tools.Compiler
 
             _scriptRunner.RunScripts(context, ScriptNames.PreCompile, contextVariables);
 
-            var result = _commandFactory.Create($"compile-{compilerName}", new[] { "@" + $"{rsp}" })
-                .OnErrorLine(line =>
-                {
-                    var diagnostic = ParseDiagnostic(context.ProjectDirectory, line);
-                    if (diagnostic != null)
-                    {
-                        diagnostics.Add(diagnostic);
-                    }
-                    else
-                    {
-                        Reporter.Error.WriteLine(line);
-                    }
-                })
-                .OnOutputLine(line =>
-                {
-                    var diagnostic = ParseDiagnostic(context.ProjectDirectory, line);
-                    if (diagnostic != null)
-                    {
-                        diagnostics.Add(diagnostic);
-                    }
-                    else
-                    {
-                        Reporter.Output.WriteLine(line);
-                    }
-                }).Execute();
+            // Cache the reporters before invoking the command in case it is a built-in command, which replaces
+            // the static Reporter instances.
+            Reporter errorReporter = Reporter.Error;
+            Reporter outputReporter = Reporter.Output;
+
+            CommandResult result = _commandFactory.Create($"compile-{compilerName}", new[] { $"@{rsp}" })
+                .WorkingDirectory(context.ProjectDirectory)
+                .OnErrorLine(line => HandleCompilerOutputLine(line, context, diagnostics, errorReporter))
+                .OnOutputLine(line => HandleCompilerOutputLine(line, context, diagnostics, outputReporter))
+                .Execute();
 
             // Run post-compile event
             contextVariables["compile:CompilerExitCode"] = result.ExitCode.ToString();
@@ -209,10 +218,23 @@ namespace Microsoft.DotNet.Tools.Compiler
 
             if (success)
             {
-                success &= GenerateCultureResourceAssemblies(context.ProjectFile, dependencies, intermediateOutputPath, outputPath);
+                success &= GenerateCultureResourceAssemblies(context.ProjectFile, dependencies, outputPath, compilationOptions);
             }
 
             return PrintSummary(diagnostics, sw, success);
+        }
+
+        private static void HandleCompilerOutputLine(string line, ProjectContext context, List<DiagnosticMessage> diagnostics, Reporter reporter)
+        {
+            var diagnostic = ParseDiagnostic(context.ProjectDirectory, line);
+            if (diagnostic != null)
+            {
+                diagnostics.Add(diagnostic);
+            }
+            else
+            {
+                reporter.WriteLine(line);
+            }
         }
     }
 }

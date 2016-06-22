@@ -34,27 +34,38 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
 
         private static SHA1 Sha1 { get; } = SHA1.Create();
 
-        internal static XDocument GenerateBindingRedirects(this IEnumerable<LibraryExport> dependencies, XDocument document)
+        public static void GenerateBindingRedirects(this IEnumerable<LibraryExport> dependencies, IEnumerable<string> configFiles)
         {
             var redirects = CollectRedirects(dependencies);
 
             if (!redirects.Any())
             {
                 // No redirects required
-                return document;
+                return;
             }
-            document = document ?? new XDocument();
 
-            var configuration = GetOrAddElement(document, ConfigurationElementName);
+            foreach (var configFile in configFiles)
+            {
+                GenerateBindingRedirects(configFile, redirects);
+            }
+        }
+
+        internal static void GenerateBindingRedirects(string configFile, AssemblyRedirect[] bindingRedirects)
+        {
+            XDocument configRoot = File.Exists(configFile) ? XDocument.Load(configFile) : new XDocument();
+            var configuration = GetOrAddElement(configRoot, ConfigurationElementName);
             var runtime = GetOrAddElement(configuration, RuntimeElementName);
             var assemblyBindings = GetOrAddElement(runtime, AssemblyBindingElementName);
 
-            foreach (var redirect in redirects)
+            foreach (var redirect in bindingRedirects)
             {
                 AddDependentAssembly(redirect, assemblyBindings);
             }
 
-            return document;
+            using (var fileStream = File.Open(configFile, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+            {
+                configRoot.Save(fileStream);
+            }
         }
 
         private static void AddDependentAssembly(AssemblyRedirect redirect, XElement assemblyBindings)
@@ -74,10 +85,15 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
                 assemblyBindings.Add(dependencyElement);
             }
 
-            dependencyElement.Add(new XElement(BindingRedirectElementName,
-                    new XAttribute(OldVersionAttributeName, redirect.From.Version),
-                    new XAttribute(NewVersionAttributeName, redirect.To.Version)
-                    ));
+            bool redirectExists = dependencyElement.Elements(BindingRedirectElementName).Any(element => IsSameRedirect(redirect, element));
+
+            if (!redirectExists)
+            {
+                dependencyElement.Add(new XElement(BindingRedirectElementName,
+                        new XAttribute(OldVersionAttributeName, redirect.From.Version),
+                        new XAttribute(NewVersionAttributeName, redirect.To.Version)
+                        ));
+            }
         }
 
         private static bool IsSameAssembly(AssemblyRedirect redirect, XElement dependentAssemblyElement)
@@ -90,6 +106,16 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
             return (string)identity.Attribute(NameAttributeName) == redirect.From.Name &&
                    (string)identity.Attribute(PublicKeyTokenAttributeName) == redirect.From.PublicKeyToken &&
                    (string)identity.Attribute(CultureAttributeName) == redirect.From.Culture;
+        }
+
+        private static bool IsSameRedirect(AssemblyRedirect redirect, XElement bindingRedirectElement)
+        {
+            if (bindingRedirectElement == null)
+            {
+                return false;
+            }
+            return (string)bindingRedirectElement.Attribute(OldVersionAttributeName) == redirect.From.Version.ToString() &&
+                   (string)bindingRedirectElement.Attribute(NewVersionAttributeName) == redirect.To.Version.ToString();
         }
 
         private static XElement GetOrAddElement(XContainer parent, XName elementName)
@@ -107,23 +133,34 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
             return element;
         }
 
-        private static AssemblyRedirect[] CollectRedirects(IEnumerable<LibraryExport> dependencies)
+        internal static AssemblyRedirect[] CollectRedirects(IEnumerable<LibraryExport> dependencies)
         {
-            var allRuntimeAssemblies = dependencies
+            var runtimeAssemblies = dependencies
                 .SelectMany(d => d.RuntimeAssemblyGroups.GetDefaultAssets())
-                .Select(GetAssemblyInfo)
-                .ToArray();
+                .Select(GetAssemblyInfo);
 
-            var assemblyLookup = allRuntimeAssemblies.ToDictionary(r => r.Identity.ToLookupKey());
+            return CollectRedirects(runtimeAssemblies);
+        }
+
+        internal static AssemblyRedirect[] CollectRedirects(IEnumerable<AssemblyReferenceInfo> runtimeAssemblies)
+        {
+            var assemblyLookup = runtimeAssemblies.ToLookup(r => r.Identity.ToLookupKey());
 
             var redirectAssemblies = new HashSet<AssemblyRedirect>();
-            foreach (var assemblyReferenceInfo in allRuntimeAssemblies)
+            foreach (var assemblyReferenceInfo in assemblyLookup)
             {
-                foreach (var referenceIdentity in assemblyReferenceInfo.References)
+                // Using .First here is not exactly valid, but we don't know which one gets copied to
+                // output so we just use first
+                var references = assemblyReferenceInfo.First().References;
+                foreach (var referenceIdentity in references)
                 {
-                    AssemblyReferenceInfo targetAssemblyIdentity;
-                    if (assemblyLookup.TryGetValue(referenceIdentity.ToLookupKey(), out targetAssemblyIdentity)
-                        && targetAssemblyIdentity.Identity.Version != referenceIdentity.Version)
+                    var targetAssemblies = assemblyLookup[referenceIdentity.ToLookupKey()];
+                    if (!targetAssemblies.Any())
+                    {
+                        continue;
+                    }
+                    var targetAssemblyIdentity = targetAssemblies.First();
+                    if (targetAssemblyIdentity.Identity.Version != referenceIdentity.Version)
                     {
                         if (targetAssemblyIdentity.Identity.PublicKeyToken != null)
                         {
@@ -142,33 +179,40 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
 
         private static AssemblyReferenceInfo GetAssemblyInfo(LibraryAsset arg)
         {
-            using (var peReader = new PEReader(File.OpenRead(arg.ResolvedPath)))
+            try
             {
-                var metadataReader = peReader.GetMetadataReader();
-
-                var definition = metadataReader.GetAssemblyDefinition();
-
-                var identity = new AssemblyIdentity(
-                    metadataReader.GetString(definition.Name),
-                    definition.Version,
-                    metadataReader.GetString(definition.Culture),
-                    GetPublicKeyToken(metadataReader.GetBlobBytes(definition.PublicKey))
-                );
-
-                var references = new List<AssemblyIdentity>(metadataReader.AssemblyReferences.Count);
-
-                foreach (var assemblyReferenceHandle in metadataReader.AssemblyReferences)
+                using (var peReader = new PEReader(File.OpenRead(arg.ResolvedPath)))
                 {
-                    var assemblyReference = metadataReader.GetAssemblyReference(assemblyReferenceHandle);
-                    references.Add(new AssemblyIdentity(
-                        metadataReader.GetString(assemblyReference.Name),
-                        assemblyReference.Version,
-                        metadataReader.GetString(assemblyReference.Culture),
-                        GetPublicKeyToken(metadataReader.GetBlobBytes(assemblyReference.PublicKeyOrToken))
-                    ));
-                }
+                    var metadataReader = peReader.GetMetadataReader();
 
-                return new AssemblyReferenceInfo(identity, references.ToArray());
+                    var definition = metadataReader.GetAssemblyDefinition();
+
+                    var identity = new AssemblyIdentity(
+                        metadataReader.GetString(definition.Name),
+                        definition.Version,
+                        metadataReader.GetString(definition.Culture),
+                        GetPublicKeyToken(metadataReader.GetBlobBytes(definition.PublicKey))
+                        );
+
+                    var references = new List<AssemblyIdentity>(metadataReader.AssemblyReferences.Count);
+
+                    foreach (var assemblyReferenceHandle in metadataReader.AssemblyReferences)
+                    {
+                        var assemblyReference = metadataReader.GetAssemblyReference(assemblyReferenceHandle);
+                        references.Add(new AssemblyIdentity(
+                            metadataReader.GetString(assemblyReference.Name),
+                            assemblyReference.Version,
+                            metadataReader.GetString(assemblyReference.Culture),
+                            GetPublicKeyToken(metadataReader.GetBlobBytes(assemblyReference.PublicKeyOrToken))
+                            ));
+                    }
+
+                    return new AssemblyReferenceInfo(identity, references.ToArray());
+                }
+            }
+            catch (Exception e)
+            {
+                throw new InvalidDataException($"Could not read assembly info for {arg.ResolvedPath}", e);
             }
         }
 
@@ -200,7 +244,7 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
             return hex.ToString();
         }
 
-        private struct AssemblyRedirect
+        internal struct AssemblyRedirect
         {
             public AssemblyRedirect(AssemblyIdentity from, AssemblyIdentity to)
             {
@@ -213,7 +257,7 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
             public AssemblyIdentity To { get; set; }
         }
 
-        private struct AssemblyIdentity
+        internal struct AssemblyIdentity
         {
             public AssemblyIdentity(string name, Version version, string culture, string publicKeyToken)
             {
@@ -239,7 +283,7 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
             }
         }
 
-        private struct AssemblyReferenceInfo
+        internal struct AssemblyReferenceInfo
         {
             public AssemblyReferenceInfo(AssemblyIdentity identity, AssemblyIdentity[] references)
             {

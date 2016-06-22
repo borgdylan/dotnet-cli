@@ -3,7 +3,7 @@
 
 namespace Microsoft.Extensions.EnvironmentAbstractions
 {
-    internal class FileSystemWrapper : IFileSystem
+    public class FileSystemWrapper : IFileSystem
     {
         public static IFileSystem Default { get; } = new FileSystemWrapper();
 

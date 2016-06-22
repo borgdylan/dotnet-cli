@@ -3,8 +3,10 @@
 
 namespace Microsoft.Extensions.EnvironmentAbstractions
 {
-    internal interface IDirectory
+    public interface IDirectory
     {
         bool Exists(string path);
+
+        ITemporaryDirectory CreateTemporaryDirectory();
     }
 }

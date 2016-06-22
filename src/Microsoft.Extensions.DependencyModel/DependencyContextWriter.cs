@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using Microsoft.Extensions.PlatformAbstractions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -262,6 +261,10 @@ namespace Microsoft.Extensions.DependencyModel
             }
 
             AddDependencies(libraryObject, dependencies);
+            if (compilationLibrary != null && runtimeLibrary == null)
+            {
+                libraryObject.Add(DependencyContextStrings.CompilationOnlyPropertyName, true);
+            }
             return libraryObject;
         }
 

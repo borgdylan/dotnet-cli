@@ -1,19 +1,19 @@
 using System;
-using Microsoft.Extensions.PlatformAbstractions;
+using Microsoft.DotNet.InternalAbstractions;
 
 namespace Microsoft.DotNet.ProjectModel
 {
     public static class FileNameSuffixes
     {
-        public const string Deps = ".deps";
         public const string DepsJson = ".deps.json";
         public const string RuntimeConfigJson = ".runtimeconfig.json";
+        public const string RuntimeConfigDevJson = ".runtimeconfig.dev.json";
 
         public static PlatformFileNameSuffixes CurrentPlatform
         {
             get
             {
-                switch (PlatformServices.Default.Runtime.OperatingSystemPlatform)
+                switch (RuntimeEnvironment.OperatingSystemPlatform)
                 {
                     case Platform.Windows:
                         return Windows;

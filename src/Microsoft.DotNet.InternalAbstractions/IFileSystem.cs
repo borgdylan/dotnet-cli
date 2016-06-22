@@ -3,7 +3,7 @@
 
 namespace Microsoft.Extensions.EnvironmentAbstractions
 {
-    internal interface IFileSystem
+    public interface IFileSystem
     {
         IFile File { get; }
         IDirectory Directory { get; }

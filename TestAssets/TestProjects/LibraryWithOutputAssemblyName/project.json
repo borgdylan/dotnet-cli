@@ -1,13 +1,11 @@
 {
-  "compilationOptions": {
+  "buildOptions": {
     "outputName": "MyLibrary"
   },
   "dependencies": {
-    "NETStandard.Library": "1.0.0-rc2-23925"
+    "NETStandard.Library": "1.6.0"
   },
   "frameworks": {
-    "netstandardapp1.5": {
-      "imports": "dnxcore50"
-    }
+    "netstandard1.5": {}
   }
 }

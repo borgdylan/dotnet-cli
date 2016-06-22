@@ -9,4 +9,5 @@ done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 export DOTNET_REFERENCE_ASSEMBLIES_PATH=$(dirname `which mono`)/../lib/mono/xbuild-frameworks
+export DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 exec mono "$DIR/dotnet.exe" "$@"

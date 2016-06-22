@@ -1,13 +1,13 @@
 using System;
 using System.IO;
-using Microsoft.Extensions.PlatformAbstractions;
+using System.Reflection;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
     public class Muxer
     {
-            private static readonly string s_muxerName = "dotnet";
-        private static readonly string s_muxerFileName = s_muxerName + Constants.ExeSuffix;
+        public static readonly string MuxerName = "dotnet";
+        private static readonly string s_muxerFileName = MuxerName + Constants.ExeSuffix;
 
         private string _muxerPath;
 
@@ -15,6 +15,10 @@ namespace Microsoft.DotNet.Cli.Utils
         {
             get
             {
+                if (_muxerPath == null)
+                {
+                    throw new InvalidOperationException("Unable to locate dotnet multiplexer");
+                }
                 return _muxerPath;
             }
         }
@@ -27,11 +31,24 @@ namespace Microsoft.DotNet.Cli.Utils
             }
         }
 
+        public static string GetDataFromAppDomain(string propertyName)
+        {
+            var appDomainType = typeof(object).GetTypeInfo().Assembly?.GetType("System.AppDomain");
+            var currentDomain = appDomainType?.GetProperty("CurrentDomain")?.GetValue(null);
+            var deps = appDomainType?.GetMethod("GetData")?.Invoke(currentDomain, new[] { propertyName });
+
+            return deps as string;
+        }
+
         private bool TryResolveMuxerFromParentDirectories()
         {
-            var appBase = new DirectoryInfo(PlatformServices.Default.Application.ApplicationBasePath);
-            var muxerDir = appBase.Parent?.Parent;
+            var fxDepsFile = GetDataFromAppDomain("FX_DEPS_FILE");
+            if (string.IsNullOrEmpty(fxDepsFile))
+            {
+                return false;
+            }
 
+            var muxerDir = new FileInfo(fxDepsFile).Directory?.Parent?.Parent?.Parent;
             if (muxerDir == null)
             {
                 return false;
@@ -50,7 +67,7 @@ namespace Microsoft.DotNet.Cli.Utils
 
         private bool TryResolverMuxerFromPath()
         {
-            var muxerPath = Env.GetCommandPath(s_muxerName, Constants.ExeSuffix);
+            var muxerPath = Env.GetCommandPath(MuxerName, Constants.ExeSuffix);
 
             if (muxerPath == null || !File.Exists(muxerPath))
             {
