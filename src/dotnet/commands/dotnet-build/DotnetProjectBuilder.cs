@@ -114,6 +114,12 @@ namespace Microsoft.DotNet.Tools.Build
                 {
                     Directory.CreateDirectory(directoryName);
                 }
+                
+                if (file.EndsWith(".pdb") && !File.Exists(file))
+                {
+                    continue;
+                }
+                
                 File.Copy(file, destFileName, true);
             }
         }

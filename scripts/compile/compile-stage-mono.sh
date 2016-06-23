@@ -121,6 +121,9 @@ rm -rf $REPOROOT/runtime_sri_bin
 unzip -qq $REPOROOT/runtime_sri.nupkg -d $REPOROOT/runtime_sri_bin
 cp $REPOROOT/runtime_sri_bin/runtimes/unix/lib/dotnet5.2/* $OUTPUT_DIR/bin
 
+header "Installing .version"
+cp $REPOROOT/.version $OUTPUT_DIR/bin/.version
+
 cd $OUTPUT_DIR
 
 # Fix up permissions. Sometimes they get dropped with the wrong info
