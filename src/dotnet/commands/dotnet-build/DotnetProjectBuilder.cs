@@ -115,7 +115,7 @@ namespace Microsoft.DotNet.Tools.Build
                     Directory.CreateDirectory(directoryName);
                 }
                 
-                if (file.EndsWith(".pdb") && !File.Exists(file))
+                if ((file.EndsWith(".pdb") || file.EndsWith(".mdb")) && !File.Exists(file))
                 {
                     continue;
                 }

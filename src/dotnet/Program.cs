@@ -117,7 +117,7 @@ namespace Microsoft.DotNet.Cli
                     }
                     else
                     {
-                        ConfigureDotNetForFirstTimeUse(nugetCacheSentinel);
+                        //ConfigureDotNetForFirstTimeUse(nugetCacheSentinel);
 
                         // It's the command, and we're done!
                         command = args[lastArg];

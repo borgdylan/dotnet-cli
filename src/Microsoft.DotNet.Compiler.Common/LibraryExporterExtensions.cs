@@ -56,8 +56,11 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
                         targetName = Path.ChangeExtension(targetName, ".dll.mdb");
                     }
                 }
-
-                File.Copy(transformedFile, targetName, overwrite: true);
+                
+                if (File.Exists(transformedFile))
+                {
+                    File.Copy(transformedFile, targetName, overwrite: true);
+                }
             }
         }
 
