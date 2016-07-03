@@ -52,9 +52,7 @@ namespace Microsoft.DotNet.Tools.Test
 
             return _commandFactory.Create(
                 $"dotnet-{_testRunner}",
-                commandArgs,
-                null,
-                null);
+                commandArgs);
         }
     }
 }

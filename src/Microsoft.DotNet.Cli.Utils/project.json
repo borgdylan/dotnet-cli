@@ -6,7 +6,7 @@
     },
     "buildOptions": {
         "keyFile": "../../tools/Key.snk",
-        "warningsAsErrors": true
+        "warningsAsErrors": false
     },
     "dependencies": {
         "Microsoft.DotNet.ProjectModel": {

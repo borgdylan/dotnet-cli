@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.ProjectModel;
+using Microsoft.DotNet.Cli;
 
 namespace Microsoft.DotNet.Tools.Test
 {
@@ -11,23 +12,41 @@ namespace Microsoft.DotNet.Tools.Test
     {
         internal override int DoRunTests(ProjectContext projectContext, DotnetTestParams dotnetTestParams)
         {
-            var commandFactory =
-                new ProjectDependenciesCommandFactory(
-                    projectContext.TargetFramework,
-                    dotnetTestParams.Config,
-                    dotnetTestParams.Output,
-                    dotnetTestParams.BuildBasePath,
-                    projectContext.ProjectDirectory);
-
-            return commandFactory.Create(
-                    GetCommandName(projectContext.ProjectFile.TestRunner),
-                    GetCommandArgs(projectContext, dotnetTestParams),
-                    projectContext.TargetFramework,
-                    dotnetTestParams.Config)
-                .ForwardStdErr()
-                .ForwardStdOut()
-                .Execute()
-                .ExitCode;
+            try
+            {
+            	var commandFactory =
+                	new ProjectDependenciesCommandFactory(
+                	    projectContext.TargetFramework,
+                	    dotnetTestParams.Config,
+                	    dotnetTestParams.Output,
+                	    dotnetTestParams.BuildBasePath,
+                	    projectContext.ProjectDirectory);
+	
+            	return commandFactory.Create(
+                	    GetCommandName(projectContext.ProjectFile.TestRunner),
+                	    GetCommandArgs(projectContext, dotnetTestParams),
+                	    projectContext.TargetFramework,
+                	    dotnetTestParams.Config)
+                	.ForwardStdErr()
+                	.ForwardStdOut()
+                	.Execute()
+                	.ExitCode;
+            }
+            catch (CommandUnknownException e)
+            {
+                var commandFactory =
+                	new DotNetCommandFactory();
+	
+            	return commandFactory.Create(
+                	    GetDotNetCommandName(projectContext.ProjectFile.TestRunner),
+                	    GetCommandArgs(projectContext, dotnetTestParams),
+                	    projectContext.TargetFramework,
+                	    dotnetTestParams.Config)
+                	.ForwardStdErr()
+                	.ForwardStdOut()
+                	.Execute()
+                	.ExitCode;
+            }
         }
 
         private IEnumerable<string> GetCommandArgs(ProjectContext projectContext, DotnetTestParams dotnetTestParams)
@@ -45,6 +64,11 @@ namespace Microsoft.DotNet.Tools.Test
         private static string GetCommandName(string testRunner)
         {
             return $"dotnet-test-{testRunner}";
+        }
+        
+        private static string GetDotNetCommandName(string testRunner)
+        {
+            return $"test-{testRunner}";
         }
     }
 }
