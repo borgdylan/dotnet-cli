@@ -26,8 +26,12 @@ namespace Microsoft.DotNet.Cli.Utils
             {
                 if (_hostDir == null)
                 {
+                	#if NET461 || NET451
+                	_hostDir =  AppDomain.CurrentDomain.BaseDirectory;
+                	#else
                     var fxDepsFile = Muxer.GetDataFromAppDomain("FX_DEPS_FILE");
                     _hostDir = Path.GetDirectoryName(fxDepsFile);
+                    #endif
                 }
 
                 return _hostDir;
@@ -38,6 +42,10 @@ namespace Microsoft.DotNet.Cli.Utils
         {
             foreach (var binaryName in Constants.HostBinaryNames)
             {
+            	if (binaryName == null || destinationPath == null)
+            	{
+            		continue;
+            	}
                 var outputBinaryName = binaryName.Equals(Constants.HostExecutableName)
                                      ? hostExeName : binaryName;
                 var outputBinaryPath = Path.Combine(destinationPath, outputBinaryName);
